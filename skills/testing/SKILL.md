@@ -33,6 +33,16 @@ Not all the tests for a feature at once, then the implementation. Tests for imag
 
 One test, the minimal implementation, the next test. Each cycle reacts to what the previous one taught you. Where that turns out to be inconvenient, the interface is usually the problem, not the discipline.
 
+## Where tests go
+
+Test at the seams the released plan names (its Tests section lists, per target, the interface it is tested at). The interface is the test surface: callers and tests cross the same seam, so a test that needs to reach past it says the module has the wrong shape. Name tests in the project's domain language from `GLOSSARY.md` (in the knowledge base), not in implementation terms.
+
+When the shape of the interface itself is open, call the Skill tool with "codebase-design" before writing the first test.
+
+## When a test fails
+
+A test that turns red unexpectedly on existing code is a bug: call the Skill tool with "diagnosing-bugs" rather than patching until it is green. A red inside your own red-green cycle stays in the cycle: fix the code or, if the test was wrong, the test, and run again.
+
 ## Which cases are mandatory
 
 Derive them from what the project has actually decided, not from a generic list. Three sources, and each produces a different kind of case:
@@ -51,6 +61,15 @@ For internal utilities: determinism, the edges (empty, null, boundary values), e
 
 - Happy path only. Every boundary needs its failure cases, and they are the reason the test exists.
 - Testing the implementation instead of the behaviour. Such a test breaks on every refactor and catches nothing.
+- Tautology. The expected value is recomputed the way the code computes it, so the test can only agree with the code. Take expected values from an independent source: a literal, a worked example, the spec.
+
+  ```
+  // Tautological: repeats the implementation
+  expect(total(order)).toBe(order.items.reduce((s, i) => s + i.price * i.qty, 0))
+  // Independent: 2 x 5.00 + 1 x 3.50, worked by hand
+  expect(total(order)).toBe(13.50)
+  ```
+- Mocking your own modules or internal collaborators. Mock only at system boundaries: external APIs, time and randomness, sometimes the database or filesystem (prefer a test database or in-memory stand-in). Pass those dependencies in rather than constructing them inside, and give each external operation its own function (`getUser`, `createOrder`) instead of one generic fetcher, so every mock returns one shape and needs no conditional logic.
 - Incomplete stubs. If a stub does not mirror what the code actually uses, the test passes on a fiction.
 - Leaking state between tests. Reset it, always, in one place.
 - A test-only branch in production code. Cleanup belongs in test utilities.
