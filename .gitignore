@@ -14,6 +14,7 @@
 .claude/settings.local.json
 CLAUDE.local.md
 .claude/cache/
+.claude/worktrees/
 
 # OS / Editor
 node_modules/

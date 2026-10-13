@@ -85,7 +85,7 @@ Offered here because this is where the machine-level setup happens, next to the 
 
 What it buys is what a session otherwise cannot see about itself: how much of the rate-limit window is used and what that projects to, how full the context is, which model and mode are running, the session cost, and the state of the working tree. Those are the numbers that decide when to hand off, and without them the decision is a guess.
 
-The `claude-statusbar` skill handles installation and configuration. `cs --setup` installs, `cs upgrade` is the only supported upgrade path, and `cs doctor` diagnoses. If the user declines, say nothing further about it.
+Installation and configuration belong to the `claude-statusbar` skill, which only the user can invoke: when they say yes, ask them to type `/claude-statusbar`. `cs --setup` installs, `cs upgrade` is the only supported upgrade path, and `cs doctor` diagnoses. If the user declines, say nothing further about it.
 
 ---
 
@@ -154,7 +154,7 @@ Then wait for approval.
 
 ## Phase 5: Write
 
-Create the vault structure first, then the repository files.
+Create the vault structure first, then the repository files. Everything written here is read by agents: call the Skill tool with "writing-for-agents" before writing.
 
 ### Size is a hard constraint, not a preference
 
@@ -284,6 +284,11 @@ Give it a third column: where the skill sits in the roadmap. Two columns answer 
 | „Schreib die Spec für X", „X spezifizieren" | `write-spec` | Schritt 7 |
 | „Lass uns Phase 4 bauen", „den Plan abarbeiten" | `execute-plan` | Ritual, nach Freigabe |
 | „Klick das mal durch", „sieht das gut aus" | `handlauf` | Ritual, Gate |
+| „Was können wir besser machen", „das passiert uns schon wieder" | `retro` | Ritual, nach den Reviews |
+| „Das ist kaputt", „geht nicht", „warum passiert X" | `diagnosing-bugs` | Jederzeit, ohne Voraussetzung |
+| „Wo ist der Code verknotet", „Architektur aufräumen" | `/improve-codebase-architecture` vorschlagen | Jederzeit, nur per Hand |
+
+A skill that only the user can invoke still earns a row when its phrase does not name it; the row then means *suggest the command to the user*, because no skill and no model can start it.
 
 **Which skills earn a row.** Not all of them, or the table becomes a directory nobody reads. The test: **a skill earns a row when the natural way of asking for it does not contain its name.** "Write the PRD" names its skill and needs no row. "Does this actually work?" is `handlauf`, and without a row it is reachable only through the skill's own description - which is the layer this table exists to reinforce in the first place.
 

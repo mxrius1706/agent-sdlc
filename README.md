@@ -23,20 +23,28 @@ Der Ausgangspunkt ist eine Beobachtung. Ein Agent, der bei jeder Sitzung bei nul
 | `plan-build` | Aus den fertigen Specs die Bauphasen mit Gates ableiten und in den Fahrplan schreiben |
 | `planning` | Plan je Bauphase, im Planungsmodus geschrieben, vor dem Branch, mit Blöcken, Wellen und Out of Scope |
 | `execute-plan` | Den freigegebenen Plan abarbeiten, Block für Block im eigenen Worktree, bis zu drei parallel |
-| `testing` | Testdisziplin. Zuerst der fehlschlagende Test, Verify Red ist Pflicht |
+| `testing` | Testdisziplin. Zuerst der fehlschlagende Test, Verify Red ist Pflicht. Getestet wird an den Schnittstellen, die der Plan nennt |
 | `handlauf` | Drittes Gate, vor den Code-Gates. Die gebaute Fläche im Browser ansehen und durchklicken, wie ein Nutzer sie erlebt. Eigene Sitzung, kein Review-Input, reiner Bericht |
 | `review-changes` | Erstes Code-Gate am Phasenende. Drei Linsen parallel, Gate-Abgleich, reiner Bericht |
 | `thermo-nuclear-code-quality-review` | Zweites Gate. Fragt nicht ob der Code richtig ist, sondern ob er wartbar bleibt |
+| `retro` | Nach der Phase: Was hat die Arbeit schwer gemacht? Mechanisches wird ein Check, Urteilsfragen werden Regeln für die Reviewer. Ändert die Umgebung, nicht den Code |
 | `config-sync` | Die Konfiguration gegen ihre vier Autoritäten prüfen und die Drift nachziehen |
 | `session-recap` | Handoff am Sitzungsende, prüft dabei den Fahrplan auf Drift |
-| `grill-me` → `grilling` | Das Interview-Verfahren. Entscheidungsbaum in Runden, bis keine Verzweigung offen ist |
+| `diagnosing-bugs` | Quereinstieg, jederzeit: etwas ist kaputt. Erst eine schnelle Prüfung, die genau diesen Fehler rot zeigt, dann eingrenzen, Hypothesen, Fix mit Regressionstest |
+| `grill-me` → `grilling` + `domain-modeling` | Das Interview-Verfahren. Entscheidungsbaum in Runden, bis keine Verzweigung offen ist; pflegt dabei Glossar und Entscheidungsdatensätze |
+| `domain-modeling` | Die Fachsprache im Glossar schärfen und Entscheidungen festhalten, wenn sie die drei Kriterien erfüllen. Hält das Format beider |
+| `codebase-design` | Das Vokabular für tiefe Module: Modul, Schnittstelle, Tiefe, Naht, Adapter. Referenz für `testing`, Reviews und Architekturarbeit |
+| `improve-codebase-architecture` | Pflege, nur per Hand: den Bestand nach Stellen absuchen, an denen ein Modul tiefer werden sollte, als HTML-Bericht. Gewähltes geht über `write-spec` und `planning` |
 | `project-init` | Der Einstiegspunkt. Wissensbasis, PRD, Stack, Bereiche und die Anweisungsebenen eines Projekts aufbauen |
-| `skill-creator` | Skills bauen, verbessern und ihre Trefferquote messen |
-| `claude-statusbar` | Die Statuszeile im Terminal einrichten und steuern. Optional, wird bei `project-init` angeboten |
+| `writing-for-agents` | Wie man Dokumente schreibt, die ein Agent liest: Skills, `CLAUDE.md`, Regeln. Leitwörter, Verweise, Kürzen |
+| `skill-creator` | Skills bauen, verbessern und ihre Trefferquote messen. Nur per Hand |
+| `claude-statusbar` | Die Statuszeile im Terminal einrichten und steuern. Optional, wird bei `project-init` angeboten. Nur per Hand |
 
-Zwei Dateien tragen über Sitzungsgrenzen. Der **Fahrplan** `roadmap.md` in der Wissensbasis beantwortet, wo das Projekt steht und was als Nächstes kommt; er wird gleich zu Beginn aus der mitgelieferten Vorlage kopiert, bereits mit dem Ablauf ausgefüllt, je Schritt samt seiner Voraussetzung und der Regel, dass ein Skill nicht läuft, solange die noch offen ist. Später wächst er um die Bauphasen, die `plan-build` aus den fertigen Specs ableitet. Ab dann ist er zu groß für jede Sitzung, deshalb injiziert der Hook nur noch den Kopf und den Abschnitt, auf den die Zeile `Aktuelle Bauphase` zeigt. `.claude/state.md` im Repo trägt die Übergabe der letzten Sitzung. Dazu zwei Hooks, die `project-init` mit installiert: `session-state.py` injiziert Fahrplan und Übergabe bei Sitzungsstart und lässt die Sitzung mit dem nächsten Schritt eröffnen, `session-recap-trigger.py` erzwingt sie bei Abschiedsformeln.
+Zwei Dateien tragen über Sitzungsgrenzen. Der **Fahrplan** `roadmap.md` in der Wissensbasis beantwortet, wo das Projekt steht und was als Nächstes kommt; er wird gleich zu Beginn aus der mitgelieferten Vorlage kopiert, bereits mit dem Ablauf ausgefüllt, je Schritt samt seiner Voraussetzung und der Regel, dass ein Skill nicht läuft, solange die noch offen ist. Später wächst er um die Bauphasen, die `plan-build` aus den fertigen Specs ableitet. Ab dann ist er zu groß für jede Sitzung, deshalb injiziert der Hook nur noch den Kopf und den Abschnitt, auf den die Zeile `Aktuelle Bauphase` zeigt. `.claude/state.md` im Repo trägt die Übergabe der letzten Sitzung. Dazu drei Hooks, die `project-init` mit installiert: `session-state.py` injiziert Fahrplan und Übergabe bei Sitzungsstart und lässt die Sitzung mit dem nächsten Schritt eröffnen, `session-recap-trigger.py` erzwingt sie bei Abschiedsformeln, und `post-edit-check.py` führt nach jedem Edit die schnellen Checks aus `.claude/checks.json` aus.
 
-Der Kreislauf ist geschlossen: von der Idee über die Specs und die Bauphasen zurück in die Konfiguration, die dabei gegen den gebauten Code korrigiert wird. Was noch fehlt, sagt die Tabelle am Ende von [LOOP.md](LOOP.md).
+Was aus Fehlern gelernt wird, landet nicht in der immer geladenen `CLAUDE.md`. `retro` macht aus Mechanischem einen Check und aus Urteilsfragen eine Regel in `CODING_STANDARDS.md`, die nur die Reviewer lesen. Die Fachsprache steht im Glossar `GLOSSARY.md` im Vault, das jedes Interview mitpflegt.
+
+Der Kreislauf ist geschlossen: von der Idee über die Specs und die Bauphasen zurück in Specs, Umgebung und Konfiguration, die dabei gegen den gebauten Code korrigiert werden. Daneben gibt es zwei Einstiege ohne Voraussetzung: `diagnosing-bugs`, wenn etwas kaputt ist, und `improve-codebase-architecture` zur Pflege. Was noch fehlt, sagt die Tabelle am Ende von [LOOP.md](LOOP.md).
 
 ## Voraussetzungen
 

@@ -11,6 +11,8 @@ Zeichen: `⬜` offen · `🔄` läuft · `✅` fertig · `❌` bewusst entfallen
 
 Das gilt auch dann — und vor allem dann —, wenn direkt nach dem Ergebnis gefragt wird statt nach dem Schritt. „Schreib die Spec für X" ist ein Aufruf von Schritt 7 und wird genauso geprüft wie „lass uns die Specs machen".
 
+Außerhalb dieser Reihenfolge stehen nur zwei Skills, und sie haben keine Voraussetzung: `diagnosing-bugs`, wenn etwas kaputt ist, und `improve-codebase-architecture` zur Pflege des Bestands.
+
 ---
 
 ## Aufbau
@@ -19,7 +21,7 @@ Der Weg von der Idee bis zu vollständigen Spezifikationen. Jeder Schritt hat de
 
 | # | Schritt | Skill | Setzt voraus | Stand | Notiz |
 |---|---|---|---|---|---|
-| 1 | Wissensbasis | `project-init` Phase 0 | — | ⬜ | Vault einrichten, Struktur anlegen |
+| 1 | Wissensbasis | `project-init` Phase 0 | — | ⬜ | Vault einrichten, Struktur anlegen. Das Glossar entsteht im ersten Interview, nicht hier |
 | 2 | Produktdefinition | `prd` | 1 | ⬜ | Interview zuerst, dann schreiben |
 | 3 | Stack | `stack-decisions` | 2 | ⬜ | Getrennt vom Produktgespräch |
 | 4 | Design-System | `design-system` | 3 | ⬜ | Entfällt ohne Oberfläche |
@@ -53,7 +55,7 @@ Der Grund gegen einen festen Takt: Widersprüche entstehen durch **Ändern**, ni
 
 Bleibt leer, bis die Specs stehen. `plan-build` schreibt diesen Abschnitt, wenn Schritt 10 durch ist, und füllt ihn mit:
 
-- **Ablauf je Phase.** Das Ritual, das für jede Phase gleich gilt, ohne Ausnahme: `planning` → Freigabe → Branch → `execute-plan` → `handlauf` (nur mit Oberfläche) → `review-changes` → `thermo-nuclear-code-quality-review` → Rückfluss über `write-spec` und `config-sync` → Freigabe zum Push. Es gehört **in den Kopf dieses Dokuments**, nicht in diesen Abschnitt: sobald Bauphasen existieren, injiziert der Hook nur noch den Kopf und die eine aktuelle Phase, und ein Ritual in einem Nachbarabschnitt liegt dann in keiner Sitzung mehr.
+- **Ablauf je Phase.** Das Ritual, das für jede Phase gleich gilt, ohne Ausnahme: `planning` → Freigabe → Branch → `execute-plan` → `handlauf` (nur mit Oberfläche) → `review-changes` → `thermo-nuclear-code-quality-review` → `retro` → Rückfluss über `write-spec` und `config-sync` → Freigabe zum Push. Es gehört **in den Kopf dieses Dokuments**, nicht in diesen Abschnitt: sobald Bauphasen existieren, injiziert der Hook nur noch den Kopf und die eine aktuelle Phase, und ein Ritual in einem Nachbarabschnitt liegt dann in keiner Sitzung mehr.
 - **Kernprinzipien.** Was über alle Phasen hinweg gilt und in keiner einzelnen steht.
 - **Die Phasen selbst.** Je Phase: startet nach was und warum, Spec-Quellen als Links, Ziel, Inhalt, das Gate als Liste nachprüfbarer Sätze.
 - **Meilensteine.** Zwei bis vier benannte Punkte über die ganze Strecke, geschäftlich statt technisch.
