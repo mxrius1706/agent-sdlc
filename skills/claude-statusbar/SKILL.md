@@ -1,6 +1,7 @@
 ---
 name: claude-statusbar
 description: Manage `cs` (claude-statusbar) — switch theme/style/density, override severity colors, preview combinations, run doctor, reset config, install, upgrade (`cs upgrade` — the only supported upgrade path), or remove the bar, toggle fast/daemon mode, show cost or prompt-cache age, toggle the AgentParty/Codex bridge line, or toggle the activity segments (todos, active tool, running subagents, session duration, lines changed, git ahead/behind). Use whenever the user mentions cs, claude-statusbar, status bar, status line, 状态栏, AgentParty, Codex, show_party, 主题, theme switching, style switching, color customization, 余量颜色, 警告颜色, severity color, /statusbar, cs preview, cs doctor, fast mode, daemon, refreshInterval, 5h/7d window, context window display, prompt cache, todos / 待办, active tool, subagents / 子agent, session duration / 时长, lines changed / 行数, git ahead-behind / 领先落后, forecast / 预测 / 还能用多久, at-risk chip, show_forecast, or asks to install / upgrade / update / 升级 / configure / diagnose / customize the bottom status line in Claude Code or Codex/AgentParty workflows.
+disable-model-invocation: true
 ---
 
 # claude-statusbar control skill
