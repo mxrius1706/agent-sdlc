@@ -82,7 +82,7 @@ A redesign, rebrand or added dark mode is this skill on a project that already h
 
 ## When called by project-init
 
-Return the direction, the token file location and any open `TBD`, so the area map can decide whether the interface deserves its own instructions and what they point at.
+Once the token file exists, add the row `design-system` / `tokens` to the root CLAUDE.md section `Project references` pointing at it, and fill the design schema's row in the knowledge base map. Return the direction, the token file location and any open `TBD`, so the area map can decide whether the interface deserves its own instructions and what they point at.
 
 ## Before finishing
 

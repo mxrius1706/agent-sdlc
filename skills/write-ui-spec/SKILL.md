@@ -11,7 +11,7 @@ A screen can be looked at, and looking changes decisions. So the mockup comes be
 
 ## Phase 0: Sources
 
-- **The page plan** for this surface: the entry for this page, the current inventory, the target navigation graph.
+- **The page plan** for this surface, found through the knowledge base map: the entry for this page, the current inventory, the target navigation graph.
 - **The component specs this page touches**, all of them read fully: the real content comes from there.
 - **The design system**, for what to build with and what is not allowed.
 - **The current code** for this page, if it exists.
@@ -41,7 +41,7 @@ Build a concrete proposal in four parts, mockup included.
 
 *Real data.* Actual area names, ticket numbers, domain categories: they expose the problems a mockup exists to expose (a label that wraps, a column too narrow, a number longer than its space).
 
-Write the file into the repository as well as publishing it; the file is still there when someone reads the spec in six months.
+Write the file into the repository as well as publishing it, into the directory named by row `write-ui-spec` / `mockups` in the root CLAUDE.md section `Project references`; the file is still there when someone reads the spec in six months. No row: choose a directory with the user and add the row.
 
 **Iteration is the normal case.** Changes go into the same file and the same published page, not a new link per round, and may be purely visual (scroll behaviour, column balance, how a state reads at a glance).
 

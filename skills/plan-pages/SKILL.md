@@ -59,7 +59,7 @@ Give a recommendation with each question and let the user decide: these are prod
 
 ## Status per page
 
-The overview carries how far each target page has got (planned, specified, with a link to its spec once written). It is the entry point for the next step and stays current as each page spec lands.
+The overviews live in the knowledge base, next to the specs; fill the page plans' row in the knowledge base map when the first one is written. The overview carries how far each target page has got (planned, specified, with a link to its spec once written). It is the entry point for the next step and stays current as each page spec lands.
 
 ## Boundaries
 

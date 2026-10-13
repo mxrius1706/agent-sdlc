@@ -36,9 +36,9 @@ When unclear which applies: *could I disprove this by looking?* If yes, it is a 
 
 ## Scope
 
-**In:** the root instructions, every area instruction file, everything under the rules and references directories, `CODING_STANDARDS.md` if present, and `.claude/checks.json`. A standard naming a path, API or check that no longer exists is checked like any claim; every command in `checks.json` must still exist and run. For rules, check the `paths:` frontmatter too: a glob matching no existing paths means the rule never loads and nothing else will notice.
+**In:** the root instructions, every area instruction file, the root CLAUDE.md section `Project references` (below), everything under the rules and references directories, `CODING_STANDARDS.md` if present, and `.claude/checks.json`. A standard naming a path, API or check that no longer exists is checked like any claim; every command in `checks.json` must still exist and run. For rules, check the `paths:` frontmatter too: a glob matching no existing paths means the rule never loads and nothing else will notice.
 
-**Out:** the skills (they describe ways of working, not project facts), the user's personal configuration, and the specs themselves: read, never changed. A spec error found here is reported and corrected through `write-spec`; contradictions *between* specs belong to `spec-consistency` and are reported, not resolved.
+**Out:** the global skills themselves (they describe ways of working, not project facts; a project copy of one is in scope, see below), the user's personal configuration, and the specs themselves: read, never changed. A spec error found here is reported and corrected through `write-spec`; contradictions *between* specs belong to `spec-consistency` and are reported, not resolved.
 
 ## Phase 1: Inventory
 
@@ -81,6 +81,14 @@ Three categories; the middle one is why this is not simply a diff.
 
 **C - Missing.** A decision was made and the configuration is silent although it covers the area otherwise. Add it, briefly.
 
+### `Project references` and project copies
+
+The section is checked like every other pointer, plus three checks of its own:
+
+- **Every row resolves**: the source exists, and the row names an installed skill and a topic that skill's text actually asks for. Otherwise **A**.
+- **Every row a running skill needs is there.** For each skill the roadmap or the phrase table uses, read its text for the topics it looks up; a missing row is **C**, minor, with the skill's fallback named.
+- **No project copy of a global skill.** A folder under `.claude/skills/` with the name of an installed global skill hides it and cuts the project off from every toolkit update. It is a finding of its own, important: compare the copy with the global skill, move what is project knowledge into a source plus a row, and propose deleting the copy. A skill of the project's own, under its own name, is fine.
+
 Severity follows **what the error causes**:
 
 - **Critical**: following it produces wrong code or breaks a security rule. Anything in a mandatory-read file with example code.
@@ -89,7 +97,7 @@ Severity follows **what the error causes**:
 
 ## Phase 5: The report
 
-Written to a file in the project, grouped **by file**, within a file by severity. Per finding: place, claim, what actually holds, evidence, category, proposal. The report stays: it anchors a release spanning several sessions and starts the next run.
+Written to `.claude/plans/<plan file name>-config-sync.md` at the end of a phase, otherwise to `.claude/plans/config-sync-<YYYY-MM-DD>.md`; grouped **by file**, within a file by severity. Per finding: place, claim, what actually holds, evidence, category, proposal. The report stays: it anchors a release spanning several sessions and starts the next run.
 
 ## Phase 6: Release and correct
 
@@ -115,7 +123,7 @@ An order of attack:
 - **The technology section.** Fond of naming building blocks dropped long ago.
 - **Architecture rules.** The decisions live here, so they drift with every new one.
 - **Path and naming conventions.** They break on every rename.
-- **File-context tables** ("when working on X, read Y"). They point at moved or deleted files. **Check the other direction too:** reference documents in *no* table are never loaded, never maintained, and reliably the most drifted. Comparing directory contents against the table costs nothing.
+- **The knowledge base map and `Project references`**. They point at moved or deleted files. **Check the other direction too:** reference documents in *no* table are never loaded, never maintained, and reliably the most drifted. Comparing directory contents against the table costs nothing.
 
 Two patterns concern a file's whole purpose; ask "does this file have a job of its own?":
 
