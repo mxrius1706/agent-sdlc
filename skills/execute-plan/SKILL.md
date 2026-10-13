@@ -47,8 +47,9 @@ Put the blocks in a todo list, grouped by wave.
 
 One file in the scratchpad, `rules-bundle-<phase>.md`, written before the first dispatch and reused by every subagent of the phase:
 
-- The project's binding rules from the root instructions (architecture rules, security minimums, test duty, definition of done, known weaknesses).
+- The project's binding rules from the root instructions (architecture rules, security minimums, test duty, definition of done).
 - The path rules that will match in this phase, meaning every file in `.claude/rules/` whose `paths:` frontmatter hits one of the plan's critical files, **content copied in**, not named.
+- The **glossary terms** relevant to the phase's areas (from `GLOSSARY.md` in the knowledge base, reached through the knowledge base map in the root instructions), **content copied in**, including each term's `_Avoid_` aliases. A path in a prompt is a request; the terms themselves are simply there. Leave the rest of the glossary out.
 - The verification commands and what green means.
 - The worktree contract (below).
 
@@ -108,7 +109,7 @@ Never re-dispatch unchanged after a block. Repeating without changing an input i
 
 ## Step 5: One combined review per block
 
-A fresh reviewer (`model: "sonnet"`) reads the block's diff (`git diff <phase-branch>...HEAD` in the worktree), the plan's text for the block's tasks and the rules bundle. It answers two questions in one pass, in this order:
+A fresh reviewer (`model: "sonnet"`) reads the block's diff (`git diff <phase-branch>...HEAD` in the worktree), the plan's text for the block's tasks, the rules bundle and, if the repo has one, `CODING_STANDARDS.md` (judgement rules that only reviewers read; implementers never get it). Names in the diff are checked against the glossary terms in the bundle. It answers two questions in one pass, in this order:
 
 1. **Spec:** Is every task of the block implemented as the plan says? Is anything built the plan did **not** ask for? Do paths, names, types, constraints match? Is the written thing visible where the plan promises it?
 2. **Quality:** the project's checklist from the bundle, security invariants by name, taken from the project's own baseline rather than a generic list (authentication, authorisation, CSRF, rate limit, validation, audit trail, integrity chains, no hardcoded secrets), tests for new logic including failure cases.
@@ -137,7 +138,7 @@ In the order blocks finish.
 
 All waves merged and green: hand over to the phase gate. It is the project's gate checklist, the full test suite, a walkthrough of the interface where the phase has one (`handlauf`), then `review-changes` and `thermo-nuclear-code-quality-review`, then the report. Those gates keep their full depth and run on the strong model; they are what makes the lighter per-block review safe.
 
-The collected findings from the block reviews go to **`review-changes` only**. `handlauf` gets none of them, and it is not started from this session: it runs clean, so that it looks at the interface rather than at a list somebody else wrote. Hand the user the branch and the surfaces to walk, and let them start it.
+The collected findings from the block reviews go to **`review-changes`**, and to **`retro`** afterwards as one of its primary sources. `handlauf` gets none of them, and it is not started from this session: it runs clean, so that it looks at the interface rather than at a list somebody else wrote. Hand the user the branch and the surfaces to walk, and let them start it.
 
 Check that `.worktrees/` is empty and `git worktree list` shows only the main checkout.
 

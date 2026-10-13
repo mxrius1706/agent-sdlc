@@ -35,6 +35,8 @@ Before reading any code, from the file list alone: which of the project's invari
 
 Derive the list from what the project has actually settled, not from a generic catalogue: the accepted decisions, the mandatory rules in the root instructions, the legal or domain constraints the product definition names, and anything the project has explicitly declared dead. A change that reintroduces something a decision removed is a finding regardless of how well it is written.
 
+If the repo has a `CODING_STANDARDS.md`, it is a standards source too: the judgement rules that `retro` collected from earlier reviews. Read it here and hand it to the structure lens. It is read by reviewers only, which is the point: it never loads into an implementing session.
+
 The checklist is project-specific by nature. Build it once from the decisions and keep it with the project, not here.
 
 ## Phase 1: Three lenses, in parallel
@@ -47,7 +49,7 @@ Fan-out buys depth through **one lens per head**, not five lenses in one overloa
 |---|---|
 | **Security** | How do I break this? Authentication, scope, input validation, error leakage, auditing, the project's own security rules |
 | **Spec fidelity** | Line against document: are the requirements met, the contracts kept, the acceptance criteria achievable? Was an open point silently decided? Is an accepted decision violated? |
-| **Structure** | Does it fit the house? Existing patterns, naming, error catalogue, edge cases, state transitions, query behaviour, dead code, tests, the contract between front and back |
+| **Structure** | Does it fit the house? Existing patterns, naming, error catalogue, edge cases, state transitions, query behaviour, dead code, tests, the contract between front and back. Also the standards, the glossary and the smell baseline below |
 
 These are three different ways of thinking. Merging security and spec fidelity costs depth in both; separating structure from correctness only opens a crack for findings to fall through.
 
@@ -55,9 +57,30 @@ These are three different ways of thinking. Merging security and spec fidelity c
 
 Use a full-reading agent, not an excerpt-reading one. Constructing an exploit and checking a contract both need the whole file, and what is missing is usually outside the window an excerpt search would have picked.
 
+### The structure lens in detail
+
+Four sources, in this order of authority:
+
+1. **The project's standards:** `CODING_STANDARDS.md` and the rules in the root instructions. They win over everything below.
+2. **The glossary.** Check the names in the diff (types, functions, fields, routes, user-facing text) against the terms in `GLOSSARY.md` in the knowledge base. A name that is an `_Avoid_` alias of a glossary term is a finding: same concept, wrong word, and the next reader cannot tell it is the same thing. Without a glossary, skip this.
+3. **The design vocabulary.** Call the Skill tool with "codebase-design" and use its terms (module, interface, depth, seam, adapter, leverage, locality) to word design findings, so that "shallow module, interface as wide as its implementation" replaces "feels overengineered".
+4. **The smell baseline.** Fowler's twelve, as judgement heuristics. Two rules bind it: the repo's own standards override it (where they endorse something the baseline flags, suppress the smell), and anything tooling already enforces is skipped. Every hit is labelled "possible X", never a hard violation, and never above informational unless a project standard or a spec also says so.
+   - **Mysterious Name**: a name that does not reveal what it does or holds. Rename; if no honest name comes, the design is murky.
+   - **Duplicated Code**: the same logic shape in more than one place in the change. Extract and call it from both.
+   - **Feature Envy**: a method that reaches into another object's data more than its own. Move it onto the data it envies.
+   - **Data Clumps**: the same few fields or parameters always travel together. Bundle them into one type.
+   - **Primitive Obsession**: a primitive or string standing in for a domain concept. Give the concept a small type.
+   - **Repeated Switches**: the same switch or if-cascade on the same type recurs. Replace with polymorphism or one shared map.
+   - **Shotgun Surgery**: one logical change forces scattered edits in many files. Gather what changes together into one module.
+   - **Divergent Change**: one file edited for several unrelated reasons. Split so each module changes for one reason.
+   - **Speculative Generality**: abstraction, parameters or hooks for needs the spec does not have. Delete; inline back until a real need shows.
+   - **Message Chains**: long `a.b().c().d()` navigation the caller should not depend on. Hide the walk behind one method.
+   - **Middle Man**: a class or function that mostly delegates onward. Cut it and call the target directly.
+   - **Refused Bequest**: a subclass that ignores or overrides most of what it inherits. Use composition.
+
 ### The brief
 
-Every reviewer runs as a subagent on the **strong model**, set explicitly rather than inherited. This is the phase gate, and it is what makes a lighter per-block review during the build acceptable: a net on the cheap model defeats the trade that `execute-plan` makes. Every reviewer gets: the changed files, the governing specs with their relevant requirement numbers, the current phase with its gate, the project's architecture rules, the true pre-check flags, and its own lens. Plus two instructions that do the actual work:
+Every reviewer runs as a subagent on the **strong model**, set explicitly rather than inherited. This is the phase gate, and it is what makes a lighter per-block review during the build acceptable: a net on the cheap model defeats the trade that `execute-plan` makes. Every reviewer gets: the changed files, the governing specs with their relevant requirement numbers, the current phase with its gate, the project's architecture rules, the true pre-check flags, `CODING_STANDARDS.md` if there is one, the glossary terms for the changed areas (content, not a path), and its own lens. The structure reviewer also gets the smell baseline pasted in full, since it has no other access to it. Plus two instructions that do the actual work:
 
 **Stay in your lens.** A finding outside it is not yours; a sibling covers it. Deep in one lens beats broad and shallow.
 
@@ -73,7 +96,7 @@ Five severities: something exploitable without authentication or destroying data
 
 More than a couple in the top band usually means the validation step was skipped. Between two bands, take the lower one. Severity inflation costs the report its credibility on the one day it matters.
 
-The report carries: the verdict, the specs consulted, the findings with location, lens, violated rule, demonstration and a suggested fix, then the **gate comparison** item by item, then the test gaps, then what was solved well. A gate item that cannot be checked without a running system is "not checkable", never "met" — that distinction is the whole value of the gate section, and it is the part the user reads before releasing.
+The report carries: the verdict, the specs consulted, the findings with location, lens, violated rule, demonstration and a suggested fix, then the **gate comparison** item by item, then the test gaps, then what was solved well, then the **candidates for retro**. A gate item that cannot be checked without a running system is "not checkable", never "met" — that distinction is the whole value of the gate section, and it is the part the user reads before releasing.
 
 Say what was clean. "Checked and clean" is information, and its absence reads like an oversight.
 
@@ -83,11 +106,9 @@ A review regularly finds that **the spec** is the problem, not the code: a rule 
 
 These findings otherwise vanish, because the report only judges code. Collect them in their own section at the end: which document, which place, what is missing or contradictory. The user decides whether that becomes a spec run. **Change no spec here** — this skill writes neither code nor documents.
 
-## Phase 4: Turn repeats into rules
+## Phase 4: Candidates for retro
 
-Only for findings in the top two bands, and only for the second occurrence.
-
-Extract the **generalised class of defect**, without file paths, and keep a tally with the project. Something seen once is an incident; something seen twice is a pattern, and a pattern belongs in the root instructions under known weaknesses. That is where a mistake becomes a rule, and without it the same mistake repeats until somebody happens to remember it.
+A finding in the top two bands may be a class of defect rather than an incident. This skill does not turn it into a rule, because it reports only. It collects the candidates in their own section at the end of the report: the generalised class of defect without file paths, the location of this instance, and whether it looks mechanical (a check could catch it) or a judgement call. Whether it is a second occurrence is for `retro` to decide, which counts in `CODING_STANDARDS.md`. Nothing is written here.
 
 ## Anti-hallucination rules
 

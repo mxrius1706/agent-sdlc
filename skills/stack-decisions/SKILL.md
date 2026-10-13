@@ -36,7 +36,7 @@ Cover at least these, and skip any that are already settled and not in question:
 - **Data layer**: database, ORM or query layer, migration tooling
 - **Validation**: where input is checked, with what, and what happens when it fails
 - **Authentication and authorization**, including where in the request path the check sits
-- **Testing**: framework, what must be covered, and what is deliberately left uncovered
+- **Testing**: framework, what must be covered, and what is deliberately left uncovered. This decision also settles the **after-edit check**: the fast, deterministic commands that run after every edit (type check, lint of the touched files, never the full suite). `project-init` writes them to `.claude/checks.json`, so name each command exactly as it will be run
 - **Deployment target**, to the depth that it affects the code
 - **Secret handling**: where secrets live and how the code reaches them
 

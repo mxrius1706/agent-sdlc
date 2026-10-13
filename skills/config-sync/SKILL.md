@@ -42,7 +42,7 @@ Tool names carry an extra trap: only what the **running** server offers counts. 
 
 ## Scope
 
-**In:** the root instructions, every area instruction file in the tree, and everything under the rules and references directories. For rules, the `paths:` frontmatter is checked too: a glob pointing at paths that no longer exist means the rule never loads, and nothing else will ever notice.
+**In:** the root instructions, every area instruction file in the tree, and everything under the rules and references directories. Also in scope: `CODING_STANDARDS.md` in the repo, if there is one, and `.claude/checks.json`. A standard that names a path, an API or a check that no longer exists is checked like any other claim, and so is every command in `checks.json`: it must still exist and run. For rules, the `paths:` frontmatter is checked too: a glob pointing at paths that no longer exist means the rule never loads, and nothing else will ever notice.
 
 **Out:** the skills, because they describe ways of working rather than project facts, and a skill that rewrites skills is needlessly delicate. The user's personal configuration, because it is theirs. And the specs themselves - this reads them and never changes them. Contradictions *between* specs belong to `spec-consistency`; if one turns up here it is reported, not resolved.
 
@@ -83,7 +83,7 @@ The last three tend to surface **while correcting**, not while checking, because
 
 Three categories. The middle one is why this is not simply a diff.
 
-**A - Wrong.** The configuration contradicts its authority without cause. Pull it into line.
+**A - Wrong.** The configuration contradicts its authority without cause. Pull it into line. A command in `.claude/checks.json` that no longer exists or no longer runs belongs here: the after-edit hook would fail on every edit, or worse, be silently skipped.
 
 **B - Existing, with an expiry date.** The configuration describes the current state **correctly**, and that state is going away on purpose. **Do not touch it.** A model working on that system still needs the description. What gets checked is only whether the expiry note is there, whether it names the right decision, and whether it is still current. Deleting here prematurely takes away the configuration's knowledge of a running system.
 
@@ -113,6 +113,7 @@ When changing:
 
 - **Cut minimally.** Correct the affected line, do not rewrite the paragraph. The configuration has a voice grown over many sessions; smoothing it while correcting makes the change impossible to review.
 - **Carry the evidence** where it helps. A file and line reference in the text beats any assertion, because the next reader can check it in two seconds.
+- **Rewriting configuration text:** call the Skill tool with "writing-for-agents" first, and follow it.
 - **Invent nothing.** Where configuration and authority disagree and *neither* is evidently right, that is a question for the user, not a correction.
 
 Show what changed after each file, then move to the next.
