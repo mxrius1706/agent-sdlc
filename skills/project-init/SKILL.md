@@ -190,7 +190,7 @@ Sections in this order. Omit any that has nothing true to say, because an empty 
 
 **Scope discipline.** Solve the task that was asked. No improvements to neighbouring code. Ask when scope is unclear instead of guessing.
 
-**File conventions.** A table of path patterns with one real example each.
+**File conventions.** A table of path patterns with one real example each. Add one line: judgement rules for reviews live in `CODING_STANDARDS.md` in the repo, which `retro` creates when it is needed. Do not create it empty, and do not put those rules in this file: they are read by reviewers, not by every session.
 
 **Language.** Which language for code and comments, which for user-facing text, which for documentation and commits.
 
@@ -201,8 +201,6 @@ Sections in this order. Omit any that has nothing true to say, because an empty 
 This is one of the few places where a short instruction earns its permanent context cost, because it is read at the start of every session and decides whether the session begins informed or guessing.
 
 **Phrase routing.** One table mapping what the user says to the skill that should run, plus the one rule that binds those skills to the roadmap's order. The only routing table in the project. See below.
-
-**Known weak spots.** Start empty, with a note that reviews fill it once a pattern has appeared twice. An empty section with a stated filling rule is honest. A pre-filled one is invention.
 
 ### Area CLAUDE.md
 
@@ -238,10 +236,11 @@ Everything above spans far more than one session. The product interview, the sta
 
 Two files carry across that gap, and they answer different questions. The **roadmap** in the knowledge base says where the project stands and what comes next. `.claude/state.md` says what happened in the last session. **Read `references/roadmap.md` and `references/state-file.md`;** the division between them is the point and collapsing it destroys both.
 
-The hooks are what make this reliable. An instruction asking the model to read a file first is a request; injected content is simply there. The framework ships two, both copied to `.claude/hooks/` and registered:
+The hooks are what make this reliable. An instruction asking the model to read a file first is a request; injected content is simply there. The framework ships three, all copied to `.claude/hooks/` and registered:
 
 - `session-state.py` on SessionStart, which injects **both** the roadmap and the handoff, and tells the session to open by naming where things stand and offering the next step rather than waiting to be asked
 - `session-recap-trigger.py` on UserPromptSubmit, which forces the handoff to be written when someone says goodbye
+- `post-edit-check.py` on PostToolUse with matcher `Edit|Write|MultiEdit`, which runs the fast checks from `.claude/checks.json` after every edit and returns a failure with exit code 2, so the error is seen while the edit is still fresh. Write `.claude/checks.json` from the check commands `stack-decisions` settled, as `{"commands": [...], "timeout_s": 60}`: only fast, deterministic checks such as the type check and lint of the touched files, never the test suite. Without settled commands, write no file; the hook then does nothing, and `retro` reports the missing guardrail.
 
 The roadmap lives in the knowledge base, outside the repository, so the hook cannot guess its path. Write it into `.claude/roadmap-path`, one line, when installing the hook. You know the path because you created the structure in phase 0. Without it the hook still works and injects only the handoff, which is the quiet failure worth avoiding.
 
