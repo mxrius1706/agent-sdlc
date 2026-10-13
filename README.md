@@ -70,7 +70,9 @@ git clone https://github.com/mxrius1706/agent-sdlc.git
 Copy-Item -Recurse -Force agent-sdlc\skills\* $HOME\.claude\skills\
 ```
 
-Damit gilt es in jedem Projekt. Soll es nur für eines gelten, geht es nach `.claude/skills/` in dessen Ordner statt nach `~/.claude/skills/`.
+Damit gilt es in jedem Projekt. Soll es nur für eines gelten, geht es nach `.claude/skills/` in dessen Ordner statt nach `~/.claude/skills/`, dann aber vollständig und nicht zusätzlich zur globalen Installation.
+
+**Keine Projektkopien einzelner Skills.** Ein Ordner unter `.claude/skills/` mit dem Namen eines globalen Skills überdeckt ihn, und Updates kommen dort nicht mehr an. Was ein Skill über ein Projekt wissen muss, steht als Zeile im Abschnitt `## Project references` der Wurzel-`CLAUDE.md`; wie das funktioniert, steht in [LOOP.md](LOOP.md).
 
 **Prüfen:** In Claude Code `/project-init` tippen. Erscheint der Skill nicht, Sitzung neu starten.
 

@@ -434,6 +434,22 @@ Wo Skills einander brauchen, rufen sie sich über das Skill-Werkzeug auf („Cal
 
 ---
 
+## Schnittstelle zum Projekt
+
+Die Skills gelten für alle Projekte und enthalten kein Projektwissen. Braucht einer etwas, das nur dieses Projekt hat, etwa das Startkommando des Dev-Servers, das Skript für Worktrees, die Fallen beim Durchklicken oder die Zuordnung von Pfaden zu Specs, dann steht im Skill nur ein Verweis auf eine Zeile im Abschnitt **`## Project references`** der Wurzel-`CLAUDE.md`. Die Zeile zeigt auf die Quelle im Projekt, meist eine Datei unter `.claude/references/`.
+
+```
+Skill (global)  →  Zeile in ## Project references (Projekt)  →  Quelle (Projekt)
+```
+
+Der Abschnitt ist eine Tabelle `Skill | Topic | Source`; welche Themen es gibt, legt jeder Skill an der Stelle fest, wo er das Wissen braucht. Er enthält nur Zeilen, deren Quelle existiert, und wer eine Quelle anlegt, trägt die Zeile ein. Fehlt eine Zeile, arbeitet der Skill ohne das Wissen weiter und nennt die Lücke. Die Wissensbasis-Tabelle bleibt daneben bestehen: Sie zeigt auf das Material im Vault, `Project references` auf das im Repo.
+
+Der Grund ist eine Erfahrung aus einem echten Projekt: Sechs Projektkopien globaler Skills unter `.claude/skills/` hatten die globale Fassung überdeckt, und kein Update des Baukastens kam dort mehr an. Eine Kopie ist der bequemste Weg, Projektwissen unterzubringen, und der teuerste. Deshalb meldet `config-sync` jede solche Kopie als eigenen Befund, und `retro` schlägt bei fehlendem Projektwissen immer eine Zeile plus Quelle vor, nie eine Änderung am Skill.
+
+Fest bleiben nur die Dateien, die der Baukasten selbst definiert und die oft ein Hook maschinell liest: `.claude/state.md`, `.claude/roadmap-path`, `.claude/checks.json`, `.claude/hooks/`, `CODING_STANDARDS.md` und die Plandateien unter `.claude/plans/`, neben denen jetzt auch die Berichte der Gates liegen.
+
+---
+
 ## Zwei Regeln über allem
 
 **Eine Wahrheit, ein Ort.** Keine Aussage steht in zwei Dateien. Wo eine zweite sie braucht, verweist sie. Zwei Kopien einer Regel werden irgendwann uneins, und dann folgt die Arbeit der falschen.
@@ -478,5 +494,6 @@ Ehrlich, weil ein Kreislauf mit Lücke kein Kreislauf ist.
 | `codebase-design` | Vokabular tiefer Module für Tests, Reviews und Architekturarbeit | vorhanden |
 | `improve-codebase-architecture` | Pflege: Bestand nach Vertiefungskandidaten absuchen, nur per Hand | vorhanden |
 | Sofortprüfung | `post-edit-check.py` führt `.claude/checks.json` nach jedem Edit aus | vorhanden |
+| `## Project references` | Schnittstelle zwischen globalen Skills und Projektquellen, geprüft von `config-sync` | vorhanden |
 
 Was heute steht, trägt den ganzen Weg von der Idee bis zum Ende einer Bauphase und wieder zurück in Specs, Umgebung und Konfiguration, dazu den Quereinstieg für Fehler und die Pflege der Architektur. Die Sofortprüfung nach jedem Edit bringt `project-init` jetzt selbst mit; welche Befehle sie ausführt, entscheidet `stack-decisions` je Projekt.
