@@ -1,20 +1,18 @@
 ---
 name: write-ui-spec
-description: "Specify one screen, decided against a working mockup rather than in prose. Covers what the page shows, how it is laid out, what the user can do there, which existing screen it reuses and where it leads next. Builds the mockup first and iterates on the picture before writing anything down. Use it when a screen needs designing or specifying, when someone asks how a page should look or behave, or when an existing screen is being reworked. Run it after the page plan exists, one call per screen."
+description: "Specify one screen, decided against a working mockup rather than in prose: contents, layout, user actions, reuse of existing screens, next steps. Use when a screen needs designing or specifying, when asked how a page should look or behave, or when a screen is reworked. Run after the page plan exists, one call per screen."
 ---
 
 # Write UI Spec
 
 One call, one screen.
 
-The difference to specifying anything else is that a screen can be looked at, and looking at it changes decisions. So the mockup comes before the document, not after it, and the document records what survived being seen.
-
-That is not a nicety. Layouts that read perfectly well as a list of requirements turn out obviously wrong the moment they are rendered: a menu that made sense at one card and not at the other six, a counter on a row that has nothing to count, a control that explains itself nowhere. None of those are visible in prose.
+A screen can be looked at, and looking changes decisions. So the mockup comes before the document, and the document records what survived being seen. Layouts that read well as requirements turn out wrong once rendered: a menu that made sense at one card and not at the other six, a counter on a row with nothing to count, a control that explains itself nowhere.
 
 ## Phase 0: Sources
 
 - **The page plan** for this surface: the entry for this page, the current inventory, the target navigation graph.
-- **The component specs this page touches.** All of them, not skimmed. They are where the real content comes from.
+- **The component specs this page touches**, all of them read fully: the real content comes from there.
 - **The design system**, for what to build with and what is not allowed.
 - **The current code** for this page, if it exists.
 
@@ -23,13 +21,13 @@ That is not a nicety. Layouts that read perfectly well as a list of requirements
 Distil from the sources, each point with its citation:
 
 - **Which data the page shows.** Fields, states, transitions.
-- **Which actions the user can take, and what the specs say about how those must behave.** This is usually the most valuable find: a spec will say "no preselection on a suggestion" or "the closing note is mandatory in the same step as the status change" without ever mentioning a screen. Those are interface requirements written by someone thinking about correctness, and they are easy to miss precisely because they are not filed under interface.
+- **Which actions the user can take, and what the specs say about how those must behave.** This is usually the most valuable find: a spec says "no preselection on a suggestion" or "the closing note is mandatory in the same step as the status change" without mentioning a screen. These interface requirements are easy to miss because they are not filed under interface.
 - **Who sees this page**, from the roles and permissions.
 - **Which routes lead here** in the target navigation graph, and which lead away.
 
 ## Phase 2: Propose, show, iterate
 
-The core of this skill. Build a concrete proposal in four parts, and do not skip the fourth.
+Build a concrete proposal in four parts, mockup included.
 
 **Content.** What is on the page, in what order and grouping, each element traced to the spec that requires it.
 
@@ -39,25 +37,25 @@ The core of this skill. Build a concrete proposal in four parts, and do not skip
 
 **The mockup, in the same pass.** Use the `artifact-design` skill to render the first three as an HTML page, and show it. Two rules keep it useful:
 
-*It translates, it does not invent.* No new colours, no new layout thinking, no components the design system does not have. If the mockup needs something the design system lacks, that is a finding about the design system, not a licence to improvise.
+*It translates, it does not invent.* Only the design system's colours, layout thinking and components. A need the design system lacks is a finding about the design system.
 
-*Real data, never placeholder text.* Actual area names, ticket numbers, categories from the domain. Lorem ipsum hides exactly the problems a mockup exists to expose: a label that wraps, a column that is too narrow, a number that is longer than the space for it.
+*Real data.* Actual area names, ticket numbers, domain categories: they expose the problems a mockup exists to expose (a label that wraps, a column too narrow, a number longer than its space).
 
-Write the file into the repository as well as publishing it. A published link is convenient now; a file in the repository is still there when someone reads the spec in six months.
+Write the file into the repository as well as publishing it; the file is still there when someone reads the spec in six months.
 
-**Iteration is the normal case.** Changes go into the same file and the same published page, not a new link per round. And the changes are allowed to be purely visual: scroll behaviour, column balance, how a state reads at a glance. Those are the findings the picture exists to produce.
+**Iteration is the normal case.** Changes go into the same file and the same published page, not a new link per round, and may be purely visual (scroll behaviour, column balance, how a state reads at a glance).
 
-Where a genuine open question turns up, one the specs left undecided rather than a matter of taste, invoke `grill-me` instead of guessing. Where the answer only the customer has is missing, it stays an open point.
+A genuine open question the specs left undecided is worked with `grill-me`. An answer only the customer has stays an open point.
 
-Only once content, layout, flow and mockup are all confirmed does anything get written.
+Writing starts once content, layout, flow and mockup are all confirmed.
 
 ## Phase 3: Reuse check
 
 Against the inventory in the page plan: does an existing screen have the same shape as this one? Same shape means same structure, a filtered list with detail navigation, a table with the same action pattern, not merely the same subject.
 
-**Yes** means recording what is reused and what changes, both in this spec and in the page plan, so that across all the pages it becomes visible which existing screens survive.
+**Yes**: record what is reused and what changes, in this spec and in the page plan, so it shows which existing screens survive.
 
-**No** gets written down too. "No existing screen fits as a basis" is information: this page is structurally new, and someone will otherwise assume the check was skipped.
+**No**: write down "No existing screen fits as a basis"; otherwise someone assumes the check was skipped.
 
 ## Phase 4: Write
 
@@ -67,7 +65,7 @@ Use the template. Write it to the location the page plan assigned, and put both 
 
 If the flows settled in phase 2 introduce routes the target graph does not have, add them. If this page firms up or renames a working-title route, correct it there.
 
-A graph that is not updated as pages land describes the plan from before the first page was designed.
+A graph not updated as pages land describes the plan from before the first page was designed.
 
 ## Phase 6: Short report
 

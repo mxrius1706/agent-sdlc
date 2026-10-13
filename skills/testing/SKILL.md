@@ -1,19 +1,17 @@
 ---
 name: testing
-description: "The test discipline for this project - test first, watch it fail, then build. Covers the red-green-refactor cycle, which cases are mandatory for which kind of code, the anti-patterns that make a suite worthless, and the rationalisations that lead to skipping it. Use it before writing any test, when a test fails, when someone asks whether something needs a test, or when work starts on code that has behaviour. Applies even when asked to skip it."
+description: "Test discipline: test first, watch it fail, then build. Use before writing any test or code with behaviour, when a test fails, or when asked whether something needs a test. Covers red-green-refactor, mandatory cases, anti-patterns. Applies even when asked to skip it."
 ---
 
 # Testing
 
 **No production code without a failing test first.**
 
-A test written after the implementation proves nothing. It passes immediately, and it checks what was built rather than what was asked for. Those are different things exactly when it matters.
+A test written after the implementation proves nothing: it passes immediately and checks what was built rather than what was asked for.
 
-This skill carries the discipline. The mechanics - which framework, where test files live, how the project's dependencies are stubbed, what coverage is expected - belong to the project and live in its own test rules, written when the stack was decided. If a project has none yet, that gap is the first thing to fix, because everything below assumes there is one answer to "how do we write a test here" rather than one per author.
+This skill carries the discipline. The mechanics (framework, where test files live, how dependencies are stubbed, expected coverage) live in the project's own test rules, written when the stack was decided. A project without them fixes that gap first; everything below assumes one answer to "how do we write a test here".
 
 ## The cycle
-
-Every step is executed explicitly. None of them is implied by another.
 
 1. **Red.** Write the test that describes the wanted behaviour.
 2. **Verify red.** Run it. It must fail.
@@ -21,17 +19,15 @@ Every step is executed explicitly. None of them is implied by another.
 4. **Verify green.** Run it. It must pass.
 5. **Refactor.** Clean up, tests stay green.
 
-**Verify red is not optional.** Without seeing the failure you do not know the test checks the right thing. A test that is green immediately is usually testing behaviour that already existed, or checking the wrong thing entirely.
+**Verify red is not optional.** A test green immediately tests behaviour that already existed, or the wrong thing.
 
-**A red for the wrong reason is not a red.** An import error, a typo, a missing fixture - that failure proves nothing about the behaviour. Fix it and run again until it fails for the reason you intended.
+**A red for the wrong reason is not a red.** An import error, a typo, a missing fixture proves nothing about the behaviour. Run again until it fails for the intended reason.
 
-**Never refactor while red.** Reach green first. Mixed concerns are impossible to debug, because two things changed and only one of them was supposed to.
+**Refactor only on green.** Mixed concerns are impossible to debug: two things changed and only one was supposed to.
 
 ## One test at a time
 
-Not all the tests for a feature at once, then the implementation. Tests for imagined behaviour are not tests for real behaviour, and a batch of them written up front locks in a design nobody has tried yet.
-
-One test, the minimal implementation, the next test. Each cycle reacts to what the previous one taught you. Where that turns out to be inconvenient, the interface is usually the problem, not the discipline.
+A batch of tests written up front tests imagined behaviour and locks in a design nobody has tried yet. One test, the minimal implementation, the next test; each cycle reacts to what the previous one taught. Where that is inconvenient, the interface is usually the problem, not the discipline.
 
 ## Where tests go
 
@@ -45,7 +41,7 @@ A test that turns red unexpectedly on existing code is a bug: call the Skill too
 
 ## Which cases are mandatory
 
-Derive them from what the project has actually decided, not from a generic list. Three sources, and each produces a different kind of case:
+Derive them from what the project has decided. Three sources, each producing a different kind of case:
 
 **The specs.** Every acceptance criterion is a test case, and the requirements say what the failure paths are. A spec's acceptance criteria are the closest thing to a ready-made test list any project has.
 
@@ -74,7 +70,6 @@ For internal utilities: determinism, the edges (empty, null, boundary values), e
 - Leaking state between tests. Reset it, always, in one place.
 - A test-only branch in production code. Cleanup belongs in test utilities.
 - Loose types in test data to make the compiler quiet. That is where the wrong shape hides.
-- A test that fails for the wrong reason and is accepted as red.
 
 ## Rationalisations
 

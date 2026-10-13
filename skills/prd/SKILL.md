@@ -1,6 +1,6 @@
 ---
 name: prd
-description: 'Generate high-quality Product Requirements Documents (PRDs) for software systems and AI-powered features. Includes executive summaries, user stories, technical specifications, and risk analysis.'
+description: 'Write a Product Requirements Document (PRD) for a software system or AI feature: executive summary, user stories, technical specification, risks. Use to start a product or feature, turn a vague idea into requirements, or when asked to "write a PRD" or "document requirements".'
 license: MIT
 ---
 
@@ -8,17 +8,7 @@ license: MIT
 
 ## Overview
 
-Design comprehensive, production-grade Product Requirements Documents (PRDs) that bridge the gap between business vision and technical execution. This skill works for modern software systems, ensuring that requirements are clearly defined.
-
-## When to Use
-
-Use this skill when:
-
-- Starting a new product or feature development cycle
-- Translating a vague idea into a concrete technical specification
-- Defining requirements for AI-powered features
-- Stakeholders need a unified "source of truth" for project scope
-- User asks to "write a PRD", "document requirements", or "plan a feature"
+Write Product Requirements Documents (PRDs) that bridge business vision and technical execution.
 
 ---
 
@@ -26,7 +16,7 @@ Use this skill when:
 
 ### Phase 1: Discovery (Grill the Idea)
 
-Before writing a single line of the PRD, you **MUST** sharpen the raw idea by running it through a rigorous interview. Do not assume context, and do not rely on a couple of scripted questions — invoke the `grill-me` skill (call the Skill tool with `grill-me`, passing the user's initial request/idea as the argument) to conduct the interview. Grilling digs past surface-level answers and forces vague thinking into something concrete, which is exactly what a PRD needs to avoid becoming aspirational fiction.
+Before writing a single line of the PRD, you **MUST** sharpen the raw idea by running it through a rigorous interview: invoke the `grill-me` skill (call the Skill tool with `grill-me`, passing the user's initial request/idea as the argument) to conduct the interview. Grilling digs past surface-level answers and forces vague thinking into something concrete, which is exactly what a PRD needs to avoid becoming aspirational fiction.
 
 By the end of the grilling, you should have clear, concrete (not hand-wavy) answers on at least:
 
@@ -112,7 +102,7 @@ You **MUST** follow this exact structure for the output:
 
 ### DON'T (Avoid)
 
-- **Skip Discovery**: Never write a PRD without running the `grill-me` interview first, unless the user explicitly opts out.
+- **Skip Discovery**: Run the `grill-me` interview first, unless the user explicitly opts out.
 - **Hallucinate Constraints**: If the user didn't specify a tech stack, ask or label it as `TBD`.
 
 ---

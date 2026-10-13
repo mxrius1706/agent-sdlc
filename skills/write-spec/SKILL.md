@@ -1,66 +1,56 @@
 ---
 name: write-spec
-description: "Write the technical specification for exactly one component, verified against the code rather than from memory, and connected to the specs around it. Covers the current state, the delta of what stays, changes, is new and becomes obsolete, the effects on neighbouring components, the requirements, the contracts and the acceptance criteria. Use it when a component needs specifying before it is built, when an existing spec has to be brought up to date after a change, or when a decision needs recording (the format comes from domain-modeling). Run it after the component map exists, one call per document."
+description: "Write the technical specification for exactly one component, verified against the code. Use when a component needs specifying before it is built, when an existing spec must be brought up to date after a change, or when a decision needs recording. Run after the component map exists, one call per document."
 ---
 
 # Write Spec
 
 One call, one document.
 
-A specification written from memory is a wish list. This one is written against the code, so every claim about what exists carries a file path, and every claim about what should exist carries a reason. The valuable half is not the requirements; it is the four checks around them, because those are what stop a set of specs from slowly contradicting itself.
+A specification written from memory is a wish list. This one is written against the code: every claim about what exists carries a file path, every claim about what should exist carries a reason. The valuable half is the four checks around the requirements (redundancy sweep, ripple check, reverse check, incoming-link scan), because they stop a set of specs from slowly contradicting itself.
 
 ## Ground rules
 
-**Never write about the code from memory.** Every statement about what exists is verified by reading or searching, and cited with its path. Not verified means not claimed.
+**Code is the only authority for what exists.** Every statement about the code is verified by reading or searching and cited with its path; not verified means not claimed. A plan document drifts and cannot see reverts or half-built work.
 
-**The product definition is the product truth.** Where the code contradicts it, that is a delta to document, not a licence to quietly reinterpret the product. A real conflict is marked as an open point and raised, not resolved in passing.
+**The product definition is the product truth.** Where the code contradicts it, that is a delta to document; a real conflict becomes an open point and is raised.
 
-**A spec describes the target state and the way there.** Not only "this is how it should be", but explicitly what stays, what changes, what is new, and **what the change leaves obsolete, inconsistent or in need of straightening**. A rebuild cuts both ways. Specifying only the additions and leaving the rest lying is half a spec.
+**A spec describes the target state and the way there**: what stays, what changes, what is new, and **what the change leaves obsolete, inconsistent or in need of straightening**. Specifying only the additions is half a spec.
 
-**Leave empty template sections out.** Six filled sections beat fourteen half ones. Current state, delta and effects are the exception: they are why this skill exists and they always appear.
+**Empty template sections stay out.** Six filled sections beat fourteen half ones. Current state, delta and effects always appear.
 
-**Write links with the full path the knowledge base resolves unambiguously.** A shortened form that depends on a setting will one day resolve somewhere else, and following a broken link creates a document in the wrong place.
+**Links use the full path the knowledge base resolves unambiguously.** A shortened form will one day resolve somewhere else and create a document in the wrong place.
 
-**Follow the project's own conventions** for documentation language, formatting and identifier language. They are recorded in the project configuration; read them rather than importing habits from elsewhere.
+**The project's own conventions** for documentation language, formatting and identifier language are in the project configuration; read them.
 
 ## Before anything: know where things are
 
-The knowledge base map in the project configuration says where the product definition, the spec index and the decision records live. Read it rather than assuming a layout.
-
-Where a tool is used to write into the knowledge base, check the name against the server that is actually running. Two servers can carry the same configured name while only one is connected, and their tools are named differently. A mandated tool that does not exist is worse than no instruction, because the step fails silently and the work continues without it.
+The knowledge base map in the project configuration says where the product definition, the spec index and the decision records live. Read it. Check tool names for writing into the knowledge base against the running server, per `config-sync`.
 
 ## Phase 0: Load the sources
 
 - **The product definition**, at least the sections that touch this component.
-- **The neighbouring specs** named in the component map. Do not specify what they own; link to it.
-- **The relevant path-scoped rules** in the repository, where the component touches paths they cover.
-- **The incoming-link scan.** This one is cheap and easy to skip, and skipping it is the most common cause of contradictions.
+- **The neighbouring specs** named in the component map. Link to what they own.
+- **The path-scoped rules** in the repository that cover the component's paths.
+- **The incoming-link scan.** Cheap, easy to skip, and the most common cause of contradictions.
 
 ### The incoming-link scan
 
-Search the specs for links pointing **at** this document, then read only the sentences that reference it, not the whole documents.
-
-The question is not "who mentions me" but **"what has someone already assumed about me?"** A field name, a behaviour, a state, a permission. Components written late get referenced before they exist, so the documents pointing at them carry expectations. This document must either honour those or knowingly break them.
-
-Findings feed the reverse check in phase 2.
+Search the specs for links pointing **at** this document and read only the sentences that reference it. The question is **"what has someone already assumed about me?"**: a field name, a behaviour, a state, a permission. Components written late get referenced before they exist, so the documents pointing at them carry expectations. This document honours them or knowingly breaks them. Findings feed the reverse check in phase 2.
 
 ## Phase 1: Current state, from code only
 
-Verify what exists for this area, and list it with paths. Only what this document needs, not an inventory of the repository.
+List what exists for this area with paths, only what this document needs. The stack decisions tell which paths: schema or model definitions, request handlers, interface files, shared libraries, configuration, tests.
 
-Which paths those are follows from the stack: the schema or model definitions, the request handlers, the interface files, the shared libraries, the configuration, the tests. Read the stack decisions rather than assuming a layout.
+**Enumerate structurally.** List the affected trees rather than grepping for what you expect; the blind spot is "did not think to search for it".
 
-**Code is the only authority for what exists.** A plan document drifts and cannot see reverts or half-built work.
+**Check the existing state for internal consistency**, not just presence. These findings are the ones nobody is looking for:
 
-**Enumerate structurally, do not only search.** List the affected trees rather than grepping for what you expect to find. The blind spot is not "searched and found nothing", it is "did not think to search for it".
+- **Declared versus enforced.** A permission, enum value or configuration key used in code but defined nowhere, or defined and long dead.
+- **Name drift.** A field or route still named after a replaced concept.
+- **Remnants** of features removed except in one place.
 
-**Check the existing state for internal consistency**, not just for presence. This is where the findings come from that nobody is looking for:
-
-- **Declared versus enforced.** A permission, an enum value or a configuration key used in the code but defined nowhere. Or the reverse, defined and long dead.
-- **Name drift.** A field or route still named after a concept that has since been replaced.
-- **Remnants** of features that were removed except in one place.
-
-These are the raw material for the sweep in phase 2. They fall through otherwise, because the natural question is "what am I building" and never "what is already wrong here".
+They are the raw material for the sweep in phase 2: the natural question is "what am I building", never "what is already wrong here".
 
 ## Phase 2: The delta
 
@@ -73,48 +63,42 @@ For each relevant existing piece, a classification with one sentence of reasonin
 
 ### The redundancy sweep
 
-Not optional. **Additions announce themselves; redundancy does not.** So ask the existing system directly what this change leaves behind:
+Mandatory. **Additions announce themselves; redundancy does not.** Ask the existing system what this change leaves behind:
 
-- **Becomes obsolete.** A model, field, permission or route whose purpose disappears with the change. Remove it, or, where only a product question is open, mark it as "check" with a note on **who** decides. Never delete blind.
-- **Needs straightening.** The inconsistencies found in phase 1. Even when they are not strictly part of this document, if the document touches them they come along as an adaptation, otherwise the defect stays.
-- **Classify honestly.** Not every finding is a removal. Separate a genuine break, which goes out or gets straightened, from a scope question, which becomes an open point. Wrongly declaring something redundant does as much damage as missing it.
+- **Becomes obsolete.** A model, field, permission or route whose purpose disappears. Remove it, or where only a product question is open mark it "check" with **who** decides. Delete only with evidence.
+- **Needs straightening.** The phase 1 inconsistencies. If the document touches them they come along as an adaptation, otherwise the defect stays.
+- **Classify honestly.** A genuine break goes out or gets straightened; a scope question becomes an open point. Wrongly declaring something redundant does as much damage as missing it.
 
 ### The ripple check, forwards
 
-Which other components does each adaptation **and each straightening** touch? A field added to an entity reaches the contracts, the lists that display it, the integrity payload, the audit trail. A renamed permission reaches the seeded roles, the routes and the interface labels.
-
-Note each as a link to the affected spec, **even when that document does not exist yet**. A link to nothing is a known hole, and a known hole is the point.
+Which other components does each adaptation **and each straightening** touch? A field added to an entity reaches the contracts, the lists that display it, the integrity payload, the audit trail. A renamed permission reaches seeded roles, routes and interface labels. Note each as a link to the affected spec, **even when it does not exist yet**: a link to nothing is a known hole.
 
 ### The reverse check, backwards
 
-For every assumption a **already written** spec made about this document, from the phase 0 scan: either **confirm** it, or **break it deliberately** and mark the referencing spec with a note saying which assumption broke and that it needs following up. Never diverge silently.
+For every assumption an **already written** spec made about this document (phase 0 scan): **confirm** it, or **break it deliberately** and mark the referencing spec with which assumption broke and that it needs following up. A break that neither side records is the quiet contradiction this check exists to prevent.
 
-A break that neither side records is exactly the quiet contradiction this check exists to prevent.
-
-Know what this does not catch: it finds "someone already relied on me". It does not find "a decision changed afterwards". That needs a decision record, the ripple list and a later consistency pass across the whole graph.
+It finds "someone already relied on me". It cannot find "a decision changed afterwards"; that takes a decision record, the ripple list and a later consistency pass (`spec-consistency`).
 
 ## Phase 2b: Open points, grill rather than guess
 
-The moment an open point blocks the document, an architectural fork, an unresolved delta, a contradiction between the existing system and the product definition, it is neither written away as a silent `TBD` nor asked casually in passing. Invoke `grill-me` and work it properly.
+An open point that blocks the document (architectural fork, unresolved delta, contradiction between system and product definition) is worked with `grill-me`.
 
-**Separate two kinds of open point, because they need opposite handling:**
+Two kinds need opposite handling:
 
-- **Decidable now**, a technical fork that the product definition and the code can settle between them. Grill it until it is clear, then write the result into the document, and record it as a decision if it meets the three criteria (hard to reverse, surprising without context, the result of a real trade-off), which come from calling the Skill tool with "domain-modeling".
-- **Only answerable by someone else**, typically a customer or a stakeholder. Whether anyone will pay for something, what a field must contain in practice, what response time is expected. Do **not** grill the user for knowledge they do not have. It stays an open point with a note on who has to answer it.
+- **Decidable now**: a technical fork the product definition and the code settle between them. Grill until clear, write the result into the section it belongs to, and record it as a decision when it qualifies (Skill tool with "domain-modeling" holds the criteria).
+- **Only answerable by someone else** (customer, stakeholder: will anyone pay, what must a field contain, what response time is expected). It stays an open point with a note on who answers it; the user is grilled only for knowledge they have.
 
-Grilling means sharpening decisions, not interrogating someone where the knowledge is simply absent.
-
-Anything settled in the round goes into the document, in the section it belongs to. Nothing that was just decided is left standing as open.
+Nothing just decided is left standing as open.
 
 ## Phase 3: Write
 
-Use the template. Write to the location the component map assigned, then update the spec index with the new status and date. An index that has not been updated hides the work from everyone who looks there first.
+Use the template. Write to the location the component map assigned, then update the spec index with status and date; an index that is not updated hides the work from everyone who looks there first.
 
-For a decision, call the Skill tool with "domain-modeling": it holds the decision record format and the criteria for when a record is warranted. One page, one decision.
+For a decision, call the Skill tool with "domain-modeling": it holds the record format. One page, one decision.
 
 ## Phase 4: Short report
 
-Three things, no more. What was decided, including what the grilling settled. Which ripple effects point at which other documents. Which open points remain, and who has to answer them.
+What was decided, including what the grilling settled. Which ripple effects point at which documents. Which open points remain, and who answers them.
 
 ---
 
