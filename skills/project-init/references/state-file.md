@@ -1,20 +1,12 @@
 # The session handoff
 
-`.claude/state.md` carries what happened in the last session, and nothing else. A SessionStart hook injects it, so it arrives before the first prompt without anyone asking.
+`.claude/state.md` carries what happened in the last session, and nothing else. A SessionStart hook injects it before the first prompt.
 
-It is committed, not ignored. What was done last session is a fact about the project, not a personal note, and an ignored file is gone after a machine change.
+It is committed, not ignored. What was done last session is a fact about the project, and an ignored file is gone after a machine change.
 
-## What it is not
+## Handoff vs roadmap
 
-It does not say where the project stands in the process. That is the roadmap's job, and duplicating it here would create the second version that eventually disagrees with the first. See `references/roadmap.md`.
-
-The division is worth stating precisely, because the two look similar:
-
-**The roadmap** answers *where are we and what comes next*. It changes when a step completes, which is rarely, and it lives in the knowledge base with the other durable documents.
-
-**The handoff** answers *what happened last time*. It is overwritten every session and describes only the most recent one.
-
-Mixing them buries the durable answer under the volatile one.
+**The roadmap** answers *where are we and what comes next*. It changes when a step completes and lives in the knowledge base (`references/roadmap.md`). **The handoff** answers *what happened last time*. It is overwritten every session. The handoff never says where the project stands in the process; mixing them buries the durable answer under the volatile one.
 
 ## Shape
 
@@ -38,14 +30,18 @@ Write it in the project's documentation language. The headings are an example, n
 
 ## Rules
 
-**Facts only.** What the next session cannot reconstruct: which branch, which commit range, how many tests passed, which gate is through. Not how the work felt.
+**Facts only.** What the next session cannot reconstruct: which branch, which commit range, how many tests passed, which gate is through.
 
-**"Nächstes" has to be actionable.** Name the file, the document or the command. "Continue" is not a next step.
+**"Nächstes" has to be actionable.** Name the file, the document or the command; if the order matters, say why, since that reasoning is what will be missing.
 
-**Around fifteen lines.** The limit is the discipline. Beyond it the file stops being read, and an unread handoff is the same as none.
+**Around fifteen lines.** Beyond it the file stops being read, and an unread handoff is the same as none.
 
-**Overwrite, do not append.** Only the last session is relevant. A growing log buries the present under history, and history is what the version control system is for.
+**Omit empty sections.**
 
-## How it gets written
+**Overwrite, do not append.** Only the last session is relevant; version control holds the history.
 
-By `session-recap` at the end of a session, triggered by a hook on farewell phrases so nobody has to remember. See that skill for the details.
+**A correction owed is the next step.** Something noticed but not fixed outranks the next new piece of work, otherwise it sinks and resurfaces as a bug.
+
+## Who writes it
+
+`session-recap` at the end of a session, triggered by a hook on farewell phrases.

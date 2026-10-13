@@ -1,55 +1,39 @@
 # The roadmap
 
-`roadmap.md` in the knowledge base is where the project's current position lives. It answers "where are we and what comes next" for anyone opening the project, and it is the only file that answers it.
-
-It starts as the setup process and grows into the build plan. Those are the same document at two stages of a project's life, not two documents, which is why it is created at the very beginning rather than once building starts.
+`roadmap.md` in the knowledge base is the only file that answers "where are we and what comes next". It starts as the setup process and grows into the build plan: the same document at two stages of a project's life, which is why it is created at the very beginning.
 
 ## Shipped filled in
 
-The framework ships the roadmap at `templates/roadmap.md`, next to the `project-init` skill, already carrying the steps, the skill that performs each one and the rules below. Copy it in during phase 0 and adjust only what is project-specific. Composing it fresh each time invites variation where there is no reason for any.
+`templates/roadmap.md` carries the steps, the skill that performs each one and the rules. Copy it in during phase 0, **before the product definition exists**, and adjust only what is project-specific.
 
-It is copied in **before the product definition exists**, so a project's very first session already knows what the path looks like.
-
-Status marks: `⬜` open, `🔄` in progress, `✅` done, `❌` deliberately dropped. Drop steps that do not apply rather than marking them done: a project without an interface has no design system and no UI specs, and leaving them permanently open makes the file look unfinished forever.
+Status marks: `⬜` open, `🔄` in progress, `✅` done, `❌` deliberately dropped. Drop steps that do not apply rather than marking them done: a project without an interface has no design system and no UI specs, and leaving them open makes the file look unfinished forever.
 
 ## Every step names what it needs
 
-The `Setzt voraus` column carries the step numbers that must stand before this one starts, and it is what turns an implied order into a checkable fact. The rule that goes with it sits in the **head**: before a skill from this sequence runs, its row is read, and if the precondition is still `⬜` or `🔄` the skill does not run — the missing step is named and offered instead. `❌` counts as done, because a dropped step blocks nothing.
-
-It sits in the head on purpose. Once the build phases are in the file, the head is the only part injected regardless of size, so a rule placed anywhere else stops reaching the session exactly when the project has grown complicated enough to need it.
-
-The failure this addresses is not the wrong skill, it is the right skill too early, and it almost always arrives as a request for the **result** rather than the step: nobody asks for step 7 by name, they ask for the spec for X. The rule therefore says so explicitly, or it gets read as applying only to requests that name a step.
+The `Setzt voraus` column lists the step numbers that must stand before a step starts, which turns an implied order into a checkable fact. `❌` counts as done, since a dropped step blocks nothing. The rule that goes with it (the wording is owned by `project-init`, see `references/routing.md`) sits in the template's **head** on purpose: once the build phases are in the file, the head is the only part injected regardless of size.
 
 ## Kept current
 
-A roadmap that is not updated is worse than none, because the next session believes it. Two rules keep it honest.
+A roadmap that is not updated is worse than none, because the next session believes it.
 
-**Each skill records its own step.** When a step completes, the skill that completed it writes that in, along with the next action. Nothing that depends on a person remembering survives contact with a busy week.
+**Each skill records its own step.** When a step completes, the skill that completed it writes that in, along with the next action. Nothing that depends on a person remembering survives a busy week.
 
-**"Als Nächstes" is an action, not a phase name.** "Specs" tells a new session nothing. "Write the entity model first, everything else references it" tells it where to begin and why. This matters most exactly here, because the reasoning that produced the order is the part nobody has any more after a few days.
+**"Als Nächstes" is an action, not a phase name.** "Specs" tells a new session nothing; "Write the entity model first, everything else references it" says where to begin and why. The reasoning behind the order is the part nobody has after a few days.
 
-Write what is true, not what is planned. A step that ran halfway is `🔄` with a note on what is missing, never `✅` because it nearly worked.
+Write what is true, not what is planned. A step that ran halfway is `🔄` with a note on what is missing.
 
 ## Reaching the session
 
-Two mechanisms, and both are needed.
+**The SessionStart hook injects it**, so it is in context before the first prompt. Its path goes into `.claude/roadmap-path`, because the knowledge base sits outside the repository.
 
-**The SessionStart hook injects it**, so it is in context before the first prompt without anyone choosing to read it. Its path goes into `.claude/roadmap-path` when the hook is installed, because the knowledge base sits outside the repository and the hook cannot guess.
+Once the build phases are in, the file is too large to inject whole. From then on the hook injects the head plus the one section named by the `**Aktuelle Bauphase:**` line, truncating neither. That line is load-bearing: pointing it at the wrong phase gives the next session the wrong phase with nothing failing. It is set at every phase change, in the same edit as the current position.
 
-Once the build phases are in it, the file is too large to inject whole. From then on the hook injects the head plus the one section named by the `**Aktuelle Bauphase:**` line, and truncates neither. That line is therefore load-bearing: pointing it at the wrong phase gives the next session the wrong phase with nothing failing. It is set at every phase change, in the same edit as the current position.
-
-**The root configuration names it** as the place the current status lives, and states the obligation to keep it current. The hook covers the reading; this covers the writing. Without the obligation the file becomes a diary of the first week that everything afterwards quietly contradicts.
+**The root configuration names it** as the place the status lives and states the obligation to keep it current. The hook covers the reading, the root file the writing.
 
 ## Where it does not overlap
 
-The roadmap is a position marker, not a summary. It says which step and what next; it does not restate what the other documents own.
-
-The spec index owns which specs exist and their individual status. The roadmap carries at most a count and points at the index. On a disagreement the index wins, because it is closer to the work.
-
-The session handoff in `.claude/state.md` owns what happened in the last session. The roadmap says where the project stands, which is a different question and changes far more slowly.
+The roadmap is a position marker, not a summary. The spec index owns which specs exist and their status; the roadmap carries at most a count and a pointer, and on a disagreement the index wins. The handoff in `.claude/state.md` owns the last session (see `references/state-file.md`).
 
 ## Later
 
-Once the specs stand, `plan-build` derives the build phases from them and writes them into the `## Bauphasen` section: what gets built in which order, with what gate at the end, and why the order is that one. Derived from finished specs rather than guessed in advance, which is why the section stays empty until then.
-
-It goes into this file rather than a document of its own. The roadmap already answers where the project stands; a second document answering the same question in more detail produces two answers that drift apart.
+Once the specs stand, `plan-build` writes the build phases into the `## Bauphasen` section of this file, derived from finished specs rather than guessed in advance. A second document answering the same question in more detail would drift apart from this one.

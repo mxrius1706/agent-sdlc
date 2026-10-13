@@ -39,15 +39,7 @@ Schritte, die dieses Projekt nicht braucht, werden auf `❌` gesetzt und nicht a
 
 **Letzter Lauf:** noch keiner · **Seitdem:** 0 Specs · **Offene Annahmebrüche:** 0
 
-Kein fester Takt. Ein Lauf ist fällig, wenn einer dieser Fälle eintritt:
-
-- Eine **Entscheidung wurde geändert**, die bestehende Specs zitieren. Sofort, gezielt über die zitierenden Specs.
-- Eine Spec hat **bewusst eine Annahme gebrochen** und die Gegenseite ist noch nicht nachgezogen.
-- Ein **Cluster ist fertig**, dessen Specs gegeneinander geschrieben wurden.
-- **Vor der Seitenplanung und vor dem Bauplan**, jeweils vollständig, weil beide die Specs als Ganzes lesen.
-- **Als Netz:** fünf oder mehr Specs seit dem letzten Lauf, ohne dass einer der Fälle gefeuert hat.
-
-Der Grund gegen einen festen Takt: Widersprüche entstehen durch **Ändern**, nicht durch Schreiben. Ein Lauf nach fünf Specs, in denen nichts umentschieden wurde, sucht eine Fehlerklasse, die es dort nicht gibt. Und ein Lauf, der erst fünf Specs nach einer geänderten Entscheidung kommt, findet den Fehler in sechs Dokumenten statt in einem.
+Kein fester Takt: ein Lauf ist fällig nach den Auslösern von `spec-consistency` (geänderte Entscheidung, bewusst gebrochene Annahme, fertiger Cluster, vor Seitenplanung und Bauplan, als Netz bei fünf oder mehr Specs). Widersprüche entstehen durch **Ändern**, nicht durch Schreiben.
 
 ---
 
@@ -55,7 +47,7 @@ Der Grund gegen einen festen Takt: Widersprüche entstehen durch **Ändern**, ni
 
 Bleibt leer, bis die Specs stehen. `plan-build` schreibt diesen Abschnitt, wenn Schritt 10 durch ist, und füllt ihn mit:
 
-- **Ablauf je Phase.** Das Ritual, das für jede Phase gleich gilt, ohne Ausnahme: `planning` → Freigabe → Branch → `execute-plan` → `handlauf` (nur mit Oberfläche) → `review-changes` → `thermo-nuclear-code-quality-review` → `retro` → Rückfluss über `write-spec` und `config-sync` → Freigabe zum Push. Es gehört **in den Kopf dieses Dokuments**, nicht in diesen Abschnitt: sobald Bauphasen existieren, injiziert der Hook nur noch den Kopf und die eine aktuelle Phase, und ein Ritual in einem Nachbarabschnitt liegt dann in keiner Sitzung mehr.
+- **Ablauf je Phase.** Das Ritual, das für jede Phase ohne Ausnahme gilt (Reihenfolge und Gates gehören `plan-build`). Es gehört **in den Kopf dieses Dokuments**, nicht in diesen Abschnitt: sobald Bauphasen existieren, injiziert der Hook nur noch den Kopf und die eine aktuelle Phase, und ein Ritual in einem Nachbarabschnitt liegt dann in keiner Sitzung mehr.
 - **Kernprinzipien.** Was über alle Phasen hinweg gilt und in keiner einzelnen steht.
 - **Die Phasen selbst.** Je Phase: startet nach was und warum, Spec-Quellen als Links, Ziel, Inhalt, das Gate als Liste nachprüfbarer Sätze.
 - **Meilensteine.** Zwei bis vier benannte Punkte über die ganze Strecke, geschäftlich statt technisch.
@@ -76,4 +68,4 @@ Das ist eine andere Frage als die Schreibreihenfolge aus Schritt 6. Schreibreihe
 
 **Nichts zusammenfassen, was anderen gehört.** Der Spec-Index besitzt den Status je Spec, hier steht höchstens eine Zahl und ein Verweis. Beim Widerspruch gewinnt der Index.
 
-**Die Zeile `Aktuelle Bauphase` wird maschinell gelesen.** Sobald der Bauplan steht, ist dieses Dokument zu groß, um in jede Sitzung zu passen. Der SessionStart-Hook injiziert deshalb nur noch den Kopf bis zum ersten Trenner und **genau den Abschnitt, dessen Überschrift diesen Text enthält**. Zeigt die Zeile auf die falsche Phase, arbeitet die nächste Sitzung mit der falschen Phase im Kontext, ohne dass etwas fehlschlägt. Sie wird beim Phasenwechsel gesetzt, im selben Zug wie „Jetzt".
+**Die Zeile `Aktuelle Bauphase` wird maschinell gelesen.** Der SessionStart-Hook injiziert, sobald der Bauplan steht, nur noch den Kopf bis zum ersten Trenner und **genau den Abschnitt, dessen Überschrift diesen Text enthält**. Zeigt die Zeile auf die falsche Phase, arbeitet die nächste Sitzung mit der falschen Phase im Kontext, ohne dass etwas fehlschlägt. Sie wird beim Phasenwechsel gesetzt, im selben Zug wie „Jetzt".

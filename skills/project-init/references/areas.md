@@ -22,8 +22,6 @@ Four mechanisms carry instructions, and they differ in when they enter the conte
 | Rule | `.claude/rules/*.md` | Every session if it has no `paths:` frontmatter, otherwise only when a matching file is touched |
 | Skill | `.claude/skills/<name>/SKILL.md` | Only when invoked or when its description matches the request |
 
-Two consequences worth internalizing:
-
 **Everything without `paths:` costs context in every session, forever.** A rule that matters for one directory but loads everywhere is pure overhead on every unrelated task.
 
 This has a consequence that catches people moving existing docs into `.claude/rules/`: a document that is **not** path-scoped is cheaper left where it is. A reference file sitting in `.claude/references/`, pointed at from the root file, loads only when something actually sends the session there. Move that same file into `rules/` without `paths:` and it now loads in every session, whether or not the work has anything to do with it. The migration made it more expensive, not less.
@@ -88,6 +86,6 @@ A catalog to think against, not a checklist to fill. Most projects need a handfu
 
 An area earns its own file when work inside it follows rules that do not apply elsewhere. Data-access rules do not help someone writing a component, and component rules mean nothing in a migration.
 
-Applied honestly, this rules out most candidates in a small project. That is the correct outcome. Two good area files beat six thin ones, because a thin file is one more thing to keep current and one more chance for two files to disagree. Contradictory instructions are worse than missing ones: the model picks one arbitrarily, and nobody can tell which.
+Most candidates fail this in a small project, correctly. Two good area files beat six thin ones, because a thin file is one more thing to keep current and one more chance for two files to disagree. Contradictory instructions are worse than missing ones: the model picks one arbitrarily, and nobody can tell which.
 
-Do not create an area file with nothing specific in it. Rules that hold everywhere belong in the root file. An area file that restates them adds context cost and no information.
+Rules that hold everywhere belong in the root file; an area file restating them adds context cost and no information.
