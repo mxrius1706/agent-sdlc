@@ -3,10 +3,11 @@
 # Run with run_in_background: the script stays alive as long as the server does, and
 # prints READY once the health endpoint answers.
 #
-# Usage:  bash skills/handlauf/scripts/start-dev-logged.sh <logfile>
+# Usage:  bash <handlauf skill dir>/scripts/start-dev-logged.sh <logfile>
 #
-# Adapt to the project through environment variables, or copy the script into the
-# project and hardcode them there:
+# The project's values come from the handlauf / dev server row in the root CLAUDE.md
+# section "Project references" and are passed as environment variables. The script
+# itself stays global; a project copy would stop receiving toolkit updates.
 #
 #   HL_DIR           directory to run in            default: the repository root
 #   HL_CMD           the dev server command         default: npm run dev

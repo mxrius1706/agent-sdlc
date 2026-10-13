@@ -2,7 +2,7 @@
 # Filter the dev server log for the handlauf skill: one line per event worth looking at.
 # Meant as the command of a Monitor, where each stdout line becomes a notification.
 #
-# Usage:  bash skills/handlauf/scripts/watch-dev-log.sh <logfile>
+# Usage:  bash <handlauf skill dir>/scripts/watch-dev-log.sh <logfile>
 #
 # Emits:
 #   LOG  <level line> <message line>  structured logger objects at level error or warn
@@ -12,8 +12,9 @@
 #   ERR  <line>                       uncaught errors, framework error markers, missing
 #                                     environment variables at start
 #
-# Extend HL_ERR_PATTERN for the project's own markers (database client errors, a
-# particular bundler's failure line) rather than editing the awk below:
+# Extend HL_ERR_PATTERN with the markers from the handlauf / dev server row in
+# "Project references" (database client errors, a bundler's failure line) rather
+# than editing the awk below:
 #
 #   HL_ERR_PATTERN='PrismaClient|SequelizeError'
 LOG="${1:?usage: watch-dev-log.sh <logfile>}"

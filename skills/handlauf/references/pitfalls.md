@@ -1,6 +1,8 @@
 # Pitfalls
 
-Every item here has cost somebody a run. The first group is generic and holds for any project driven through a browser. The second is empty on purpose: **a project fills it with its own traps as they are found**, because the expensive ones are always specific - a particular auth broker, a particular build cache, a particular container. A pitfall discovered during a run belongs in this file before the report is written, or the next run pays for it again.
+Every item here has cost somebody a run, and each holds for any project driven through a browser.
+
+The expensive traps are usually specific to one project: a particular auth broker, build cache or container. Those live in the project, in the source of the `handlauf` / `pitfalls` row of the root CLAUDE.md section `Project references`, one line each: the symptom, then what to do about it. A trap found during a run goes there before the report is written, or the next run pays for it again. Without the row, the report proposes the file (for example `.claude/references/handlauf-pitfalls.md`) and the row, with the trap as its first line. A trap that holds for every project belongs in the list below, through a change to the toolkit.
 
 ## Generic
 
@@ -15,8 +17,3 @@ Every item here has cost somebody a run. The first group is generic and holds fo
 - **The dev server belongs to the user.** Do not stop or restart it without asking, unless it was started for this run in this session.
 - **Read the database, do not write it.** Reading is for verifying that a save really landed. Writing or deleting only after asking.
 
-## This project
-
-<!-- Fill this in as traps are found. One line each: the symptom, then what to do about it. -->
-
-_Nothing recorded yet._

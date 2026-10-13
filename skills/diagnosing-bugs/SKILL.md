@@ -26,7 +26,7 @@ Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give
 ### Ways to construct one, in roughly this order
 
 1. **Failing test** at whatever seam reaches the bug: unit, integration, e2e.
-2. **Curl / HTTP script** against a running dev server.
+2. **Curl / HTTP script** against a running dev server (start command and URL from the row `dev server` in the root CLAUDE.md section `Project references` that names this skill; no row: ask the user).
 3. **CLI invocation** with a fixture input, diffing stdout against a known-good snapshot.
 4. **Headless browser script** (Playwright / Puppeteer) that drives the UI and asserts on DOM/console/network.
 5. **Replay a captured trace.** Save a real network request / payload / event log to disk; replay it through the code path in isolation.

@@ -17,7 +17,7 @@ Cluster the files by the project's own area boundaries. Above roughly thirty cha
 
 ## Phase 0b: Load the governing specs
 
-The step that gets skipped. Load a handful, not the graph: for each changed area, the spec that owns it, via the project's path-to-document mapping or else the spec index.
+The step that gets skipped. Load a handful, not the graph: for each changed area, the spec that owns it, via row `review-changes` / `spec map` in the root CLAUDE.md section `Project references`. No row: the spec index from the knowledge base map, and name the missing row in the report.
 
 From each spec, four parts matter: requirements and rules, interfaces and data contracts, acceptance criteria, and its **open points**. What stands open there must not have been quietly decided in the code; where it has been, that is a finding in its own right.
 
@@ -39,7 +39,7 @@ Depth comes from **one lens per head**.
 
 | Lens | Question |
 |---|---|
-| **Security** | How do I break this? Authentication, scope, input validation, error leakage, auditing, the project's own security rules |
+| **Security** | How do I break this? Authentication, scope, input validation, error leakage, auditing, the root section `Security baseline` |
 | **Spec fidelity** | Line against document: requirements met, contracts kept, acceptance criteria achievable? Open point silently decided? Accepted decision violated? |
 | **Structure** | Does it fit the house? Existing patterns, naming, error catalogue, edge cases, state transitions, query behaviour, dead code, tests, front/back contract. Plus the standards, glossary and smell baseline below |
 
@@ -52,7 +52,7 @@ Use full-reading agents: exploits and contracts need the whole file, and what is
 Four sources, in this order of authority:
 
 1. **The project's standards:** `CODING_STANDARDS.md` and the root-instruction rules. They win over everything below.
-2. **The glossary.** Check names in the diff (types, functions, fields, routes, user-facing text) against `GLOSSARY.md` in the knowledge base. A name that is an `_Avoid_` alias of a glossary term is a finding: same concept, wrong word. Without a glossary, skip this.
+2. **The glossary.** Check names in the diff (types, functions, fields, routes, user-facing text) against `GLOSSARY.md`, found through the knowledge base map. A name that is an `_Avoid_` alias of a glossary term is a finding: same concept, wrong word. Without a glossary, skip this.
 3. **The design vocabulary.** Call the Skill tool with "codebase-design" and word design findings in its terms (module, interface, depth, seam, adapter, leverage, locality): "shallow module, interface as wide as its implementation" instead of "feels overengineered".
 4. **The smell baseline.** Fowler's twelve, as judgement heuristics. The repo's own standards override it (suppress a smell they endorse), and anything tooling already enforces is skipped. Label every hit "possible X", informational unless a project standard or spec also says so.
    - **Mysterious Name**: a name that does not reveal what it does or holds. Rename; if no honest name comes, the design is murky.
@@ -86,7 +86,7 @@ Five severities: exploitable without authentication or destroying data; exploita
 
 More than a couple in the top band usually means validation was skipped. Between two bands, take the lower; inflation costs the report its credibility on the one day it matters.
 
-The report carries: the verdict, the specs consulted, the findings (location, lens, violated rule, demonstration, suggested fix), the **gate comparison** item by item, the test gaps, what was solved well, the **candidates for retro**. A gate item that cannot be checked without a running system is "not checkable", never "met": this is what the user reads before releasing. Say what was clean; "checked and clean" is information.
+The report goes to `.claude/plans/<plan file name>-review.md`, next to the phase plan, where `retro` and the next run find it. It carries: the verdict, the specs consulted, the findings (location, lens, violated rule, demonstration, suggested fix), the **gate comparison** item by item, the test gaps, what was solved well, the **candidates for retro**. A gate item that cannot be checked without a running system is "not checkable", never "met": this is what the user reads before releasing. Say what was clean; "checked and clean" is information.
 
 ## Phase 3: Spec backflow
 

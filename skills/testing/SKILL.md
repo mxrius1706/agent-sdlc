@@ -9,7 +9,7 @@ description: "Test discipline: test first, watch it fail, then build. Use before
 
 A test written after the implementation proves nothing: it passes immediately and checks what was built rather than what was asked for.
 
-This skill carries the discipline. The mechanics (framework, where test files live, how dependencies are stubbed, expected coverage) live in the project's own test rules, written when the stack was decided. A project without them fixes that gap first; everything below assumes one answer to "how do we write a test here".
+This skill carries the discipline. The mechanics (framework, where test files live, how dependencies are stubbed, expected coverage) come from the root section `Testing requirements` and the source of row `testing` / `test patterns` in the root CLAUDE.md section `Project references`. No row: take the nearest existing tests as prior art and name the missing row. A project with neither fixes that gap first; everything below assumes one answer to "how do we write a test here".
 
 ## The cycle
 
@@ -31,7 +31,7 @@ A batch of tests written up front tests imagined behaviour and locks in a design
 
 ## Where tests go
 
-Test at the seams the released plan names (its Tests section lists, per target, the interface it is tested at). The interface is the test surface: callers and tests cross the same seam, so a test that needs to reach past it says the module has the wrong shape. Name tests in the project's domain language from `GLOSSARY.md` (in the knowledge base), not in implementation terms.
+Test at the seams the released plan names (its Tests section lists, per target, the interface it is tested at). The interface is the test surface: callers and tests cross the same seam, so a test that needs to reach past it says the module has the wrong shape. Name tests in the project's domain language from `GLOSSARY.md` (through the knowledge base map), not in implementation terms.
 
 When the shape of the interface itself is open, call the Skill tool with "codebase-design" before writing the first test.
 
@@ -45,7 +45,7 @@ Derive them from what the project has decided. Three sources, each producing a d
 
 **The specs.** Every acceptance criterion is a test case, and the requirements say what the failure paths are. A spec's acceptance criteria are the closest thing to a ready-made test list any project has.
 
-**The project's binding rules.** Whatever the root instructions make mandatory on a path - an authorisation check, an audit entry, a validation boundary, a value that must come from the session rather than the request - is a case. The test is not that it is implemented; it is that it cannot be bypassed. "The identity comes from the session even when the request supplies a different one" is worth more than any number of happy paths.
+**The project's binding rules.** Whatever the root sections `Architecture rules` and `Security baseline` make mandatory on a path - an authorisation check, an audit entry, a validation boundary, a value that must come from the session rather than the request - is a case. The test is not that it is implemented; it is that it cannot be bypassed. "The identity comes from the session even when the request supplies a different one" is worth more than any number of happy paths.
 
 **The accepted decisions.** A decision that forbids something needs a test that the forbidden thing fails. That is what keeps a decision alive after the person who made it has moved on.
 
