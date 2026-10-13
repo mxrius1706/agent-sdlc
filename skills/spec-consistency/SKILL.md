@@ -56,7 +56,7 @@ Done once, by the coordinating session, and the result is handed to every review
 - Every accepted decision, one sentence each on what it settled
 - The canonical values from the entity model: the enums that exist and their valid members, which field carries which state
 - The full permission or role vocabulary, with meanings
-- The core glossary from the product definition
+- The core glossary: `GLOSSARY.md` in the vault, found through the knowledge base map, with each term's `_Avoid_` list
 
 This ledger is the single most useful artefact in the run. Most real breaks are a spec still using a value that was renamed, a permission that was consolidated away, or a sentence that quietly reverses a decision.
 
@@ -70,7 +70,7 @@ Give each written spec its own read-only reviewer, working in parallel, each car
 
 **Internal consistency.** Do its own requirements contradict each other? Do the acceptance criteria cover the requirements? Do the interfaces match what the requirements describe? Any dead or outdated value.
 
-**Invariant fidelity.** Does it honour every accepted decision, every canonical value, every permission name in the ledger? The most common break by far.
+**Invariant fidelity.** Does it honour every accepted decision, every canonical value, every permission name in the ledger? The most common break by far. A term the glossary lists under `_Avoid_` but a spec uses is a finding too. It is minor as plain wording drift, and rises only where the stray word creates a contradiction, for instance by naming a different concept than the canonical term.
 
 **The assigned edges.** For each, read the target and check whether their shared statements agree. Only the assigned ones.
 
