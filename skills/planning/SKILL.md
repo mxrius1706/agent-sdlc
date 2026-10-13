@@ -45,7 +45,7 @@ Sections, all of them mandatory:
 
 **Waves.** Which blocks may run at the same time. `execute-plan` runs up to **three** blocks of a wave in parallel, so the plan has to say where that is safe. Blocks in one wave have **disjoint** file areas and touch neither the schema, nor the compose files, nor anything that needs the running dev stack (database, dev server, a manual pass through the interface). Anything of that kind is marked **exclusive** and forms a wave of its own; keep exclusive blocks small (the migration alone, not the migration plus the features on top). List the waves in order, each with its block ids and one line on why the file areas do not overlap. Aim for few waves: a plan of three or four waves is normal, ten is a sign the blocks are too small. When in doubt about an overlap, put the block in the next wave rather than shrinking it.
 
-**Tests.** Case and expectation, including the failure cases. Follow the project's test rules for what is mandatory.
+**Tests.** Case and expectation, including the failure cases. Each test target names the **seam** (public interface) it is tested at, with one line on what a test there catches and what it misses. Releasing the plan releases the seams. Follow the project's test rules for what is mandatory.
 
 **Verification.** The commands that have to come back clean, with what clean means.
 
@@ -74,7 +74,7 @@ Put the plan to the user. Before doing so, check it yourself:
 - Every goal traces to a spec or the phase entry.
 - Out of scope covers the neighbouring work that could drift in.
 - The phase's gate items appear in verification.
-- The failure cases are in the tests, not only the happy path.
+- The failure cases are in the tests, not only the happy path, and every test target names its seam.
 - Nothing in it decides something a spec left open without saying so.
 
 Then wait. **Building starts after the release, not before.** This is the point of the whole skill and the easiest one to erode, because the plan usually looks obviously right to the person who just wrote it.
