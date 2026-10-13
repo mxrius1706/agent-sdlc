@@ -13,7 +13,7 @@ Judge the changes against the contract, not against taste: **does the code do wh
 
 `git status --short` and `git diff HEAD --stat` for the extent. For a phase review also `git diff <base>...HEAD --stat`, because the phase diff is what the gate is about.
 
-Cluster the files by the project's own area boundaries. Above roughly thirty changed files, review cluster by cluster, riskiest first.
+Cluster the files by the areas that have their own area CLAUDE.md. Above roughly thirty changed files, review cluster by cluster, riskiest first.
 
 ## Phase 0b: Load the governing specs
 

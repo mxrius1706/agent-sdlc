@@ -21,7 +21,7 @@ A specification written from memory is a wish list. This one is written against 
 
 **Links use the full path the knowledge base resolves unambiguously.** A shortened form will one day resolve somewhere else and create a document in the wrong place.
 
-**The project's own conventions** for documentation language, formatting and identifier language are in the project configuration; read them.
+**The project's conventions** for documentation and identifier language are in the root sections `Language` and `File conventions`; read them.
 
 ## Before anything: know where things are
 
