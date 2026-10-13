@@ -13,4 +13,13 @@ A bare `git worktree add` does not bring everything the build needs:
 
 ## Removing a worktree
 
-A linked dependency directory means a naive recursive delete can follow the link and empty the main checkout. Use `git worktree remove`, or the project's teardown script.
+A linked dependency directory means a recursive delete can follow the link and empty the main checkout's dependencies. On Windows that includes `git worktree remove`, which has been seen to follow a junction. Use the project's teardown script; without one, **remove the link itself first** and only then the worktree:
+
+```
+cmd //c rmdir "<worktree>
+ode_modules"   # Windows junction: removes the link, not its target
+rm "<worktree>/node_modules"              # symlink elsewhere: same, never rm -r
+git worktree remove <worktree>
+```
+
+Check afterwards that the main checkout's dependency directory is still populated.
