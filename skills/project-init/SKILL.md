@@ -66,6 +66,7 @@ A REST-based alternative exists that talks to a running Obsidian instance throug
     specs/
       _index.md         one line per spec with its status
       decisions/        one file per architecture decision
+    GLOSSARY.md         domain terms; not created now, the first resolved term creates it
 ```
 
 Keep it this shallow at the start. Depth earns its way in later. Invented hierarchy only makes things hard to find.
@@ -193,7 +194,7 @@ Sections in this order. Omit any that has nothing true to say, because an empty 
 
 **Language.** Which language for code and comments, which for user-facing text, which for documentation and commits.
 
-**Knowledge base map.** A table from question type to vault location: product questions to the PRD, decisions to `specs/decisions/`, technical detail to the relevant spec. This table is what stops a later session from creating a local copy of something that already exists in the vault.
+**Knowledge base map.** A table from question type to vault location: product questions to the PRD, decisions to `specs/decisions/`, domain terms to `GLOSSARY.md`, technical detail to the relevant spec. The glossary row is written as `TBD` until the file exists, since it is created lazily with the first resolved term. This table is what stops a later session from creating a local copy of something that already exists in the vault.
 
 **Where the project stands.** Name the roadmap explicitly as the single place that answers it, with its path, and state the obligation that goes with it: **it is updated whenever a step completes, by whoever completed it.** Both halves are needed. Without the pointer a session has no reason to look and will ask instead. Without the obligation the file becomes a diary of the first week that everything afterwards quietly contradicts.
 

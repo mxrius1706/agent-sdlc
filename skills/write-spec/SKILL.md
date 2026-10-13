@@ -1,6 +1,6 @@
 ---
 name: write-spec
-description: "Write the technical specification for exactly one component, verified against the code rather than from memory, and connected to the specs around it. Covers the current state, the delta of what stays, changes, is new and becomes obsolete, the effects on neighbouring components, the requirements, the contracts and the acceptance criteria. Use it when a component needs specifying before it is built, when an existing spec has to be brought up to date after a change, or when a decision needs recording as an architecture decision record. Run it after the component map exists, one call per document."
+description: "Write the technical specification for exactly one component, verified against the code rather than from memory, and connected to the specs around it. Covers the current state, the delta of what stays, changes, is new and becomes obsolete, the effects on neighbouring components, the requirements, the contracts and the acceptance criteria. Use it when a component needs specifying before it is built, when an existing spec has to be brought up to date after a change, or when a decision needs recording (the format comes from domain-modeling). Run it after the component map exists, one call per document."
 ---
 
 # Write Spec
@@ -99,7 +99,7 @@ The moment an open point blocks the document, an architectural fork, an unresolv
 
 **Separate two kinds of open point, because they need opposite handling:**
 
-- **Decidable now**, a technical fork that the product definition and the code can settle between them. Grill it until it is clear, then write the result into the document, and record it as a decision if it is architectural.
+- **Decidable now**, a technical fork that the product definition and the code can settle between them. Grill it until it is clear, then write the result into the document, and record it as a decision if it meets the three criteria (hard to reverse, surprising without context, the result of a real trade-off), which come from calling the Skill tool with "domain-modeling".
 - **Only answerable by someone else**, typically a customer or a stakeholder. Whether anyone will pay for something, what a field must contain in practice, what response time is expected. Do **not** grill the user for knowledge they do not have. It stays an open point with a note on who has to answer it.
 
 Grilling means sharpening decisions, not interrogating someone where the knowledge is simply absent.
@@ -110,7 +110,7 @@ Anything settled in the round goes into the document, in the section it belongs 
 
 Use the template. Write to the location the component map assigned, then update the spec index with the new status and date. An index that has not been updated hides the work from everyone who looks there first.
 
-For an architectural decision, use the decision record template instead and keep it to one page, one decision.
+For a decision, call the Skill tool with "domain-modeling": it holds the decision record format and the criteria for when a record is warranted. One page, one decision.
 
 ## Phase 4: Short report
 
@@ -139,7 +139,8 @@ tags: [spec, <area>]
 
 ## Terms
 
-<Only terms that are new here. The rest links to the glossary.>
+<Only terms that are new here. The rest links to `GLOSSARY.md` in the vault; a term that
+is new and will be reused goes into the glossary, not only here.>
 
 ## Current state (verified <date>)
 
@@ -191,38 +192,6 @@ linked from here.>
 ## Related documents
 
 <Links: product sections, neighbouring specs, decision records, repository rules.>
-```
-
-## Decision record template
-
-One page, one decision.
-
-```md
----
-title: <NNN> - <Decision>
-status: accepted   # proposed | accepted | superseded by <link>
-date: <YYYY-MM-DD>
-tags: [decision]
----
-
-# <NNN>: <The decision in one sentence>
-
-## Status
-<Accepted since ... / superseded by ...>
-
-## Context
-<The problem and the forces at work. Three to six sentences.>
-
-## Decision
-<What we do. Active voice.>
-
-## Reasoning
-<Why this option won, including the main rejected alternatives with one
-sentence each on why not.>
-
-## Consequences
-<Positive and negative. Debt taken on. The trigger that would reopen this,
-in the form "only once X, then Y".>
 ```
 
 ## Before finishing

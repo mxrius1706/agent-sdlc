@@ -50,7 +50,7 @@ A decision that exists only in a chat log did not happen. Each settled question 
 
 **Where it goes:** the decisions directory of the project's knowledge base, outside the repository, one file per decision. The repository holds the consequences of a decision, not the decision itself. Duplicating the reasoning into a `CLAUDE.md` creates the second version that will eventually disagree with the first.
 
-**What a record carries:** what was decided, what it replaces if anything, why, what was considered and rejected, and the date. The rejected options are the part people skip and the part that pays off, because the question comes back and without them it gets re-argued from zero.
+**What a record carries, and how it is written:** the format comes from calling the Skill tool with "domain-modeling". Stack choices carry lock-in, so every settled question gets a record by this skill's own rule, without weighing the three criteria again. Record what it replaces if anything, and the rejected options: they are the part people skip and the part that pays off, because the question comes back and without them it gets re-argued from zero.
 
 **What changes in the repository:** only what follows from the decision. A stack entry, a rule, a convention. Each pointing at the decision record rather than restating it.
 
