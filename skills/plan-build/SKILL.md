@@ -94,7 +94,7 @@ Write the procedure once, at the top, and state that it holds for every phase wi
 9. **The walkthrough** via `handlauf`, wherever the phase produced an interface, in a session of its own and with no input from any review (`handlauf` owns why). It runs before the code reviews because it answers a different question - is the thing usable - and a finding there sometimes means the code review is reviewing the wrong design. Report only; its findings are fixed like any other.
 10. **Two reviews, both mandatory, in this order.** First `review-changes` over the whole phase diff: correct, secure, faithful to the spec? Findings fixed, then checked again. Then `thermo-nuclear-code-quality-review` over the same changes: maintainable? The second run is **a gate of its own**: "correct" and "still changeable in six months" are different questions, and one run asked to answer both answers neither thoroughly. Whatever stays open after both is named in the report as deliberately open, with the reason.
 11. **Learn from the phase** via `retro`. After both reviews, because their reports are its primary sources. It proposes what to change in the environment: a check for what is mechanical, a rule in `CODING_STANDARDS.md` for what is judgement. Nothing changes before the user picks.
-12. **Pull the configuration back into line** via `config-sync`. After `retro`, because `retro` changes the environment and `config-sync` checks the configuration against what is then real; before the release, so the drift is in the same report the user decides on.
+12. **Pull the configuration back into line** via `config-sync`, at the point its own timing rule names: after `retro`, before the release.
 13. **Release.** The report goes to the user; pushing and the next phase wait for an explicit go.
 
 Adjust the steps to what the project has and leave out what it lacks: a step naming a skill that does not exist is read as a working instruction and fails silently.
@@ -129,14 +129,12 @@ On an existing plan this completes rather than replaces. What already happened s
 
 ## Template
 
+The ritual goes into the **head** of the roadmap, above its first `---`, as a block `**Ablauf je Phase:**` with the numbered steps. Once build phases exist, the SessionStart hook injects only the head and the current phase; a ritual under `## Bauphasen` would reach no session.
+
 ```md
 ## Bauphasen
 
 **Ordnungsprinzip:** <one sentence: what determines the order and why>
-
-### Ablauf je Phase
-
-<the ritual, binding, no exceptions>
 
 ### Kernprinzipien
 
@@ -178,11 +176,11 @@ On an existing plan this completes rather than replaces. What already happened s
 
 ## What not to do
 
-**Plan details of a phase.** The plan file does that, in plan mode, right before the phase is built; details decided months early are decided with the least information anyone will have.
+**Planning the details of a phase here.** The plan file does that, in plan mode, right before the phase is built; details decided months early are decided with the least information anyone will have.
 
-**Cut around the code that exists.** In brownfield the phases follow the target product, and what is switched off when is part of the plan.
+**Cutting around the code that exists.** In brownfield the phases follow the target product, and what is switched off when is part of the plan; a cut that follows the current structure rebuilds it.
 
-**Carry a status per spec.** The spec index owns that; phases link to their specs and stop there.
+**Carrying a status per spec.** The spec index owns that; phases link to their specs and stop there.
 
 ## Before finishing
 

@@ -120,6 +120,8 @@ Sections in this order. Omit any with nothing true to say; an empty section invi
 
 **Scope discipline.** Solve the task asked, leave neighbouring code alone, ask when scope is unclear.
 
+**Two rules over everything.** Both rules from "Two rules that hold across every generated file" below, written out in full in the documentation language: "one truth, one place" and "stock with an expiry date" with its four parts. They bind every later session, not only this setup, and other skills (`stack-decisions`, `design-system`, `config-sync`) point here for them.
+
 **File conventions.** A table of path patterns with one real example each, plus one line: judgement rules for reviews live in `CODING_STANDARDS.md` in the repo, which `retro` creates when needed (not created empty, not duplicated here, since reviewers read it rather than every session).
 
 **Language.** Which language for code and comments, user-facing text, documentation and commits.
@@ -160,7 +162,7 @@ An instruction to read a file first is a request; injected content is simply the
 
 - `session-state.py` on SessionStart: injects **both** the roadmap and the handoff, and tells the session to open by naming where things stand and offering the next step
 - `session-recap-trigger.py` on UserPromptSubmit: forces the handoff to be written on a farewell
-- `post-edit-check.py` on PostToolUse, matcher `Edit|Write|MultiEdit`: runs the fast checks from `.claude/checks.json` after every edit and returns failures with exit code 2, so the error is seen while the edit is fresh. Write `.claude/checks.json` from the commands `stack-decisions` settled, as `{"commands": [...], "timeout_s": 60}`: fast, deterministic checks such as type check and lint of the touched files, never the test suite. Without settled commands write no file; the hook then does nothing and `retro` reports the missing guardrail.
+- `post-edit-check.py` on PostToolUse, matcher `Edit|Write|MultiEdit`: runs the fast checks from `.claude/checks.json` after every edit and returns failures with exit code 2, so the error is seen while the edit is fresh. Write `.claude/checks.json` from the commands `stack-decisions` settled, as `{"commands": [...], "timeout_s": 60}`: fast, deterministic checks such as a type check, never the test suite. A command containing `{file}` runs once per edit with the edited file's path in its place (e.g. `npx eslint --quiet {file}`), which is how "lint the touched file" works. **Run each command once before writing the file.** One that cannot run yet (no `package.json`, no `tsconfig` in a greenfield project) stays out and is noted as `TBD` in the roadmap's step 5; otherwise every later edit, including the spec work, fails on a toolchain that does not exist yet. Without runnable commands write no file; the hook then does nothing and `retro` reports the missing guardrail.
 
 The roadmap sits outside the repository, so write its path, one line, into `.claude/roadmap-path` when installing the hook. Without it the hook injects only the handoff, a quiet failure.
 

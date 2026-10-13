@@ -1,6 +1,6 @@
 ---
 name: stack-decisions
-description: "Settle the technical decisions a project runs on (language, framework, data layer, validation, auth, testing, deployment, secrets) and record each as a traceable decision. Use at project start and whenever a technology is added, replaced or dropped, when asked which database or ORM to pick or how to handle secrets, or when config files describe a stack nobody confirmed."
+description: "Settle the technical decisions a project runs on (language, framework, data layer, validation, auth, testing, deployment, secrets) and record each as a traceable decision. Use at project start, when a technology is added, replaced or dropped, when asked which database or ORM to pick, or when config describes a stack nobody confirmed."
 ---
 
 # Stack Decisions
@@ -32,7 +32,7 @@ Cover at least these, and skip any that are already settled and not in question:
 - **Data layer**: database, ORM or query layer, migration tooling
 - **Validation**: where input is checked, with what, and what happens when it fails
 - **Authentication and authorization**, including where in the request path the check sits
-- **Testing**: framework, what must be covered, and what is deliberately left uncovered. This decision also settles the **after-edit check**: the fast, deterministic commands that run after every edit (type check, lint of the touched files, never the full suite). `project-init` writes them to `.claude/checks.json`, so name each command exactly as it will be run
+- **Testing**: framework, what must be covered, and what is deliberately left uncovered. This decision also settles the **after-edit check**: the fast, deterministic commands that run after every edit (type check, lint of the touched file via the `{file}` placeholder, never the full suite). `project-init` writes them to `.claude/checks.json`, so name each command exactly as it will be run
 - **Deployment target**, to the depth that it affects the code
 - **Secret handling**: where secrets live and how the code reaches them
 

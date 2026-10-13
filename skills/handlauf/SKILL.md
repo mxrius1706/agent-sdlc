@@ -1,6 +1,6 @@
 ---
 name: handlauf
-description: "Handlauf: walk a built phase through the real interface in a browser as a demanding user and report what is wrong (layout, states, speed, usability, edge cases, console, network, saved for real). EN: manual test, smoke test, click through, UX review, walkthrough, sign off the pages. DE: Handlauf, durchklicken, im Browser testen, UI pruefen, Seiten abnehmen, sieht das gut aus, nach dem Fix nochmal alles pruefen. Not automated tests, code review or page design."
+description: "Handlauf: walk a built phase through the real interface in a browser as a demanding user and report what is wrong (layout, states, speed, usability, edge cases, console, network, saved for real). EN: manual test, smoke test, click through, UX review, walkthrough, sign off the pages. DE: Handlauf, durchklicken, im Browser testen, UI pruefen, Seiten abnehmen, sieht das gut aus, nach dem Fix nochmal alles pruefen. Also after a phase is built and the question is whether the interface works, even without the word. Not automated tests, code review or page design."
 ---
 
 # Handlauf - check the interface the way a user experiences it

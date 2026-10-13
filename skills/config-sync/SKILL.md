@@ -11,7 +11,7 @@ Keep the configuration honest. It is **instruction to a model**, not documentati
 
 The trigger is a change in what the configuration depends on, not a schedule.
 
-- **End of a build phase**, after the reviews and before the release. The phase changes code, and code is the authority for the largest class of claims. After the reviews, because those still change code; before the release, so the drift lands in the same report the user decides on.
+- **End of a build phase**, after the reviews and after `retro`, before the release. The phase changes code, and code is the authority for the largest class of claims. After the reviews, because those still change code; after `retro`, because it changes the environment (`CODING_STANDARDS.md` and `.claude/checks.json` are configuration too); before the release, so the drift lands in the same report the user decides on.
 - **A decision changes**, targeted at the files that cite it.
 - **A reference target moves**: knowledge base restructured, rule file renamed, tool or server swapped. Nothing in the build triggers this one.
 

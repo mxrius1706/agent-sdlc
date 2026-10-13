@@ -131,7 +131,7 @@ In the order blocks finish.
 
 All waves merged and green: hand over to the phase gate, which runs per the ritual in `plan-build` (gate checklist, full suite, `handlauf` where there is an interface, `review-changes`, `thermo-nuclear-code-quality-review`, report). The reviews keep their full depth on the strong model.
 
-The collected block-review findings go to `review-changes`, and to `retro` afterwards as one of its primary sources. `handlauf` gets none of them and is not started from this session; hand the user the branch and the surfaces to walk, and let them start it.
+Write the collected block-review findings into the plan file under `## Block-Befunde` (block id, severity, finding, one line each); they outlive this session there. `review-changes` gets them as input, and `retro` reads them from the plan file as one of its primary sources. `handlauf` gets none of them and is not started from this session; hand the user the branch and the surfaces to walk, and let them start it.
 
 Check that `.worktrees/` is empty and `git worktree list` shows only the main checkout.
 

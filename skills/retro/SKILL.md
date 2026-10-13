@@ -17,7 +17,7 @@ Suggest improvements to the coding agent's **environment**, so that the next run
    - the report of `review-changes`, with its section "Candidates for retro"
    - the report of `thermo-nuclear-code-quality-review`
    - the report of `handlauf`
-   - the findings of the block reviews from `execute-plan`
+   - the findings of the block reviews, in the phase's plan file under `## Block-Befunde`
 
    The reports say what went wrong; the session says why it was hard.
 

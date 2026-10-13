@@ -11,7 +11,7 @@ Zeichen: `⬜` offen · `🔄` läuft · `✅` fertig · `❌` bewusst entfallen
 
 Das gilt auch dann — und vor allem dann —, wenn direkt nach dem Ergebnis gefragt wird statt nach dem Schritt. „Schreib die Spec für X" ist ein Aufruf von Schritt 7 und wird genauso geprüft wie „lass uns die Specs machen".
 
-Außerhalb dieser Reihenfolge stehen nur zwei Skills, und sie haben keine Voraussetzung: `diagnosing-bugs`, wenn etwas kaputt ist, und `improve-codebase-architecture` zur Pflege des Bestands.
+Ohne Voraussetzung laufen jederzeit `diagnosing-bugs`, wenn etwas kaputt ist, und `improve-codebase-architecture` zur Pflege des Bestands. Die Skills des Rituals haben statt einer Schrittnummer ihre Stelle im Ritual als Voraussetzung.
 
 ---
 
@@ -39,7 +39,7 @@ Schritte, die dieses Projekt nicht braucht, werden auf `❌` gesetzt und nicht a
 
 **Letzter Lauf:** noch keiner · **Seitdem:** 0 Specs · **Offene Annahmebrüche:** 0
 
-Kein fester Takt: ein Lauf ist fällig nach den Auslösern von `spec-consistency` (geänderte Entscheidung, bewusst gebrochene Annahme, fertiger Cluster, vor Seitenplanung und Bauplan, als Netz bei fünf oder mehr Specs). Widersprüche entstehen durch **Ändern**, nicht durch Schreiben.
+Kein fester Takt: ein Lauf ist fällig nach den Auslösern von `spec-consistency` (geänderte Entscheidung: sofort, gezielt über die zitierenden Specs; bewusst gebrochene Annahme; fertiger Cluster; vor Seitenplanung und Bauplan jeweils vollständig; als Netz bei fünf oder mehr Specs). Widersprüche entstehen durch **Ändern**, nicht durch Schreiben.
 
 ---
 
@@ -47,7 +47,7 @@ Kein fester Takt: ein Lauf ist fällig nach den Auslösern von `spec-consistency
 
 Bleibt leer, bis die Specs stehen. `plan-build` schreibt diesen Abschnitt, wenn Schritt 10 durch ist, und füllt ihn mit:
 
-- **Ablauf je Phase.** Das Ritual, das für jede Phase ohne Ausnahme gilt (Reihenfolge und Gates gehören `plan-build`). Es gehört **in den Kopf dieses Dokuments**, nicht in diesen Abschnitt: sobald Bauphasen existieren, injiziert der Hook nur noch den Kopf und die eine aktuelle Phase, und ein Ritual in einem Nachbarabschnitt liegt dann in keiner Sitzung mehr.
+- **Ablauf je Phase.** Das Ritual, das für jede Phase ohne Ausnahme gilt (Reihenfolge und Gates gehören `plan-build`). `plan-build` schreibt es **in den Kopf dieses Dokuments**, oberhalb des ersten Trenners, nicht in diesen Abschnitt: sobald Bauphasen existieren, injiziert der Hook nur noch den Kopf und die eine aktuelle Phase, und ein Ritual in einem Nachbarabschnitt liegt dann in keiner Sitzung mehr.
 - **Kernprinzipien.** Was über alle Phasen hinweg gilt und in keiner einzelnen steht.
 - **Die Phasen selbst.** Je Phase: startet nach was und warum, Spec-Quellen als Links, Ziel, Inhalt, das Gate als Liste nachprüfbarer Sätze.
 - **Meilensteine.** Zwei bis vier benannte Punkte über die ganze Strecke, geschäftlich statt technisch.

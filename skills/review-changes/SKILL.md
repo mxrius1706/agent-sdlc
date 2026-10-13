@@ -1,6 +1,6 @@
 ---
 name: review-changes
-description: "Review open or phase changes against specs, accepted decisions and the project's own patterns, in three parallel lenses (security, spec fidelity, structure), and check the phase gate item by item. Use before a commit or push, at the end of a build phase, or when someone asks whether changes are sound or good to release, even without the word review."
+description: "Review open or phase changes against specs, accepted decisions and the project's own patterns, in three parallel lenses (security, spec fidelity, structure), and check the phase gate item by item. Use before a commit or push, at the end of a build phase, or when asked whether changes are sound or ready to release, even without the word review."
 ---
 
 # Review Changes

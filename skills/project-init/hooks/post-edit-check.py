@@ -3,11 +3,15 @@
 Ein Fehler, der sofort auffaellt, kostet eine Zeile Korrektur. Derselbe
 Fehler am Phasenende kostet einen Review-Durchlauf. Deshalb laufen nach
 jedem Edit, Write und MultiEdit die schnellen, deterministischen Befehle
-des Projekts: Typpruefung, Lint der beruehrten Dateien.
+des Projekts: Typpruefung, Lint der beruehrten Datei.
 
 Konfiguration in `.claude/checks.json` im Projekt:
 
-    {"commands": ["npx tsc --noEmit", "npx eslint --quiet ."], "timeout_s": 60}
+    {"commands": ["npx tsc --noEmit", "npx eslint --quiet {file}"], "timeout_s": 60}
+
+`{file}` wird durch den Pfad der gerade bearbeiteten Datei ersetzt (aus
+`tool_input.file_path`, in Anfuehrungszeichen). Kennt der Aufruf keine
+Datei, wird ein Befehl mit `{file}` uebersprungen statt ohne Pfad gestartet.
 
 `stack-decisions` legt die Befehle fest, `project-init` schreibt die Datei.
 Fehlt sie, tut der Hook nichts. Das ist der Normalfall in einem Projekt,
@@ -79,6 +83,15 @@ def decode(data):
     return data
 
 
+def expand(command, edited):
+    """`{file}` durch die bearbeitete Datei ersetzen; ohne Datei: None."""
+    if "{file}" not in command:
+        return command
+    if not isinstance(edited, str) or not edited:
+        return None
+    return command.replace("{file}", '"' + edited + '"')
+
+
 def report(message):
     """Auf stderr schreiben, als UTF-8 auch unter Windows."""
     sys.stderr.buffer.write(message.encode("utf-8", errors="replace"))
@@ -102,6 +115,11 @@ def main() -> None:
     commands = [c for c in config.get("commands", []) if isinstance(c, str) and c.strip()]
     if not commands:
         return
+
+    tool_input = payload.get("tool_input")
+    edited = tool_input.get("file_path") if isinstance(tool_input, dict) else None
+    commands = [expand(c, edited) for c in commands]
+    commands = [c for c in commands if c]
 
     timeout_s = config.get("timeout_s", DEFAULT_TIMEOUT_S)
     if not isinstance(timeout_s, (int, float)) or timeout_s <= 0:

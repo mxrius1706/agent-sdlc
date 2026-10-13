@@ -26,7 +26,7 @@ Alle Skills aus `mattpocock/skills` sind auf dem Stand von Commit `49dd158` (9. 
 
 ## Vorgenommene Anpassungen
 
-**`prd`** - Phase 1 hieß im Original „Discovery (The Interview)" und stellte ein paar Standardfragen. Sie heißt jetzt „Discovery (Grill the Idea)" und ruft verbindlich den `grill-me`-Skill auf. Begründung im Skill selbst: ein PRD aus oberflächlichen Antworten wird zu „aspirational fiction". Zusätzlich darf der Nutzer das Interview abkürzen, offene Punkte werden dann als `TBD` markiert statt erfunden.
+**`prd`** - Phase 1 hieß im Original „Discovery (The Interview)" und stellte ein paar Standardfragen. Sie heißt jetzt „Discovery (Grill the Idea)" und ruft verbindlich den `grill-me`-Skill auf. Begründung im Skill selbst: ein PRD aus oberflächlichen Antworten wird zu „aspirational fiction". Zusätzlich darf der Nutzer das Interview abkürzen, offene Punkte werden dann als `TBD` markiert statt erfunden. Beim Kürzen des Baukastens fiel der Abschnitt „When to Use“ weg, weil er nur die Beschreibung wiederholte; Aufbau, Schema und Beispiel sind unverändert.
 
 **`grill-me`** - `disable-model-invocation` von `true` auf `false` gesetzt. Ohne diese Änderung kann `prd` den Skill nicht selbst aufrufen und die Kopplung oben läuft ins Leere. Außerdem ruft er nicht mehr nur `grilling` auf, sondern wie Matts `grill-with-docs` zusätzlich `domain-modeling`: Jedes Interview pflegt dabei Glossar und Entscheidungsdatensätze. Upstream ist `grill-me` bewusst zustandslos, weil es auch ohne Repo laufen soll; hier läuft jedes Interview in einem Projekt mit Wissensbasis, also gibt es keinen Grund für die zustandslose Fassung.
 
