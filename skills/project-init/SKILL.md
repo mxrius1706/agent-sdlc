@@ -126,7 +126,11 @@ Sections in this order. Omit any with nothing true to say; an empty section invi
 
 **Language.** Which language for code and comments, user-facing text, documentation and commits.
 
-**Knowledge base map.** A table from question type to vault location: product questions to the PRD, decisions to `specs/decisions/`, domain terms to `GLOSSARY.md` (`TBD` until the file exists), technical detail to the relevant spec. It stops a later session from creating a local copy of something the vault already holds.
+**Knowledge base map.** A table from question type to vault location: product questions to the PRD, the spec index to `specs/_index.md`, decisions to `specs/decisions/`, domain terms to `GLOSSARY.md`, the design schema and the page plans where `design-system` and `plan-pages` put them, technical detail to the relevant spec. A row whose target does not exist yet reads `TBD`; the skill that creates the target fills it in. It stops a later session from creating a local copy of something the vault already holds.
+
+**Project references.** The interface between the global skills and this project. Its heading is always exactly `## Project references`, in English whatever the documentation language, because skills look it up by that name. It is a table `Skill | Topic | Source`: when a skill needs something specific to this project (a script, a command, a value, a file of project traps), its text names a row here, and the row points at the source in the project, usually a file under `.claude/references/`. A row may name several skills that share one source. Write only rows whose source exists; the skill that creates a source adds its row. Without any row, leave the section out.
+
+The section carries one rule along, in a sentence under its heading: **no project copies of global skills.** A folder under `.claude/skills/` with the name of a global skill hides the global one and cuts the project off from every toolkit update. Project knowledge a skill needs goes into a row plus its source; a skill of the project's own, under its own name, is fine.
 
 **Where the project stands.** Name the roadmap as the single place that answers it, with its path, and state the obligation: **it is updated whenever a step completes, by whoever completed it.** The pointer gives a session a reason to look; the obligation keeps the file from becoming a diary of the first week. A short instruction earns its permanent context cost here, because it decides whether a session begins informed or guessing.
 

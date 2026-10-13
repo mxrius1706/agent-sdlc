@@ -20,7 +20,7 @@ Four mechanisms carry instructions, and they differ in when they enter the conte
 | Root `CLAUDE.md` | `./CLAUDE.md` or `./.claude/CLAUDE.md` | Every session, always |
 | Area `CLAUDE.md` | Inside the directory it governs | At launch if started from there, otherwise on demand when a file in that directory is read |
 | Rule | `.claude/rules/*.md` | Every session if it has no `paths:` frontmatter, otherwise only when a matching file is touched |
-| Skill | `.claude/skills/<name>/SKILL.md` | Only when invoked or when its description matches the request |
+| Skill | `.claude/skills/<name>/SKILL.md`, own names only (a global skill's name would hide the global skill) | Only when invoked or when its description matches the request |
 
 **Everything without `paths:` costs context in every session, forever.** A rule that matters for one directory but loads everywhere is pure overhead on every unrelated task.
 
