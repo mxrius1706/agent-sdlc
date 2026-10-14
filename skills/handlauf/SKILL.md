@@ -44,16 +44,16 @@ It reads intent, not judgement: the phase plan (goal, gate, decisions), the page
 
 What is specific to the project comes from the rows for `handlauf` in the root CLAUDE.md section `Project references`. Each step below names its topic and what to do when the row is missing; every missing row is named in the report under the environment section.
 
-1. **Load the browser skill** for the project's browser (topic `browser`; no row: the browser the user has connected), and the tools you expect to need in **one** `ToolSearch` call (tabs, navigate, computer, read_page, find, get_page_text, javascript_tool, read_console_messages, read_network_requests, resize_window).
+1. **Load the browser skill** for the project's browser (topic `browser`; no row: the browser the user has connected), and the tools you expect to need in **one** `ToolSearch` call. Which tools those are depends on the family the session has, Claude in Chrome or Chrome DevTools: `references/browser-tools.md` maps every purpose below to its tool in both.
 2. **A dev server with a log.** Reuse one from this session if it has a log; otherwise start it through `scripts/start-dev-logged.sh <logfile>` with `run_in_background`, after asking the user. The values come from topic `dev server` (command, directory, port, health URL, build marker, error markers), set as the `HL_*` variables the two scripts list in their headers. No row: ask the user for command and port.
 3. **Watch the log**: a `Monitor` on `scripts/watch-dev-log.sh <logfile>`, `timeout_ms` at maximum, re-armed on expiry. Assign every message to the step running when it appeared.
-4. **Your own window**: a tab via `tabs_create_mcp`, size fixed (`resize_window` 1440 x 900) so screenshots are comparable.
+4. **Your own window**: a tab of your own, size fixed at 1440 x 900 so screenshots are comparable.
 5. **Check the session**: account, role, permissions. Test accounts and roles come from topic `accounts`, a pointer to where they are kept, never the credentials themselves. No row, or expired: ask the user.
 6. **Read the pitfalls first**: `references/pitfalls.md` for the generic ones, topic `pitfalls` for the project's own (no row: none known).
 
 ## Phase 2 - look (every page, every state)
 
-The core. **A full-resolution screenshot**, and actually look: first as a whole (the impression in one sentence: tidy? finished? calm?), then area by area with `zoom`. `get_page_text` supplements looking, never replaces it.
+The core. **A full-resolution screenshot**, and actually look: first as a whole (the impression in one sentence: tidy? finished? calm?), then area by area, zoomed in. Reading the page text supplements looking, never replaces it.
 
 Check against `references/ux-checklist.md`, above all:
 
@@ -72,8 +72,8 @@ The inventory's flows, main path first. Act like a person: click, type, Enter, E
 
 After every action, **three looks**:
 - **The page:** what changed, is it understandable, is there feedback (toast, status change, focus), is the new state cleanly presented (the phase 2 look again)?
-- **The network:** `read_network_requests`, called once before the action so capture is running: 4xx/5xx, duplicate or unnecessary calls, slow responses.
-- **Console and log:** `read_console_messages` filtered to `error|warn|Uncaught|hydration`, plus the monitor messages.
+- **The network** (with Claude in Chrome, read it once before the action so capture is running): 4xx/5xx, duplicate or unnecessary calls, slow responses.
+- **Console and log:** console messages filtered to `error|warn|Uncaught|hydration`, plus the monitor messages.
 
 **Verify that it is really saved:** reload, reopen the page, or read the data through topic `data access` (a read-only API route or database access; no row: reload and reopen only, and name the gap). A success toast is not proof.
 
@@ -86,7 +86,7 @@ After every action, **three looks**:
 For **every** page checked, with a screenshot and the phase 2 look:
 - **Dark mode:** contrast, invisible text, harsh white areas, charts.
 - **The other language**, where the product has one: raw keys, untranslated leftovers, longer strings breaking the layout.
-- **Narrow** (`resize_window` 390 x 844): no horizontal page scroll, nothing overlapping, main action reachable.
+- **Narrow** (390 x 844): no horizontal page scroll, nothing overlapping, main action reachable.
 - **Keyboard:** tab order, visible focus, Escape, Enter.
 
 **Roles in one batch** at the end: send the user the list (account, role, scope, what will be checked), wait, verify the session, check, then ask to be switched back.
