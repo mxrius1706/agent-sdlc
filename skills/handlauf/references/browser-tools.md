@@ -15,7 +15,7 @@ Both available: prefer the one whose browser the user is looking at.
 | Fixed window size | `resize_window` | `resize_page` |
 | Screenshot to look at | `computer` (screenshot) | `take_screenshot` without `filePath` |
 | Zoom into an area | `computer` (zoom) | `take_screenshot` with the element's `uid` |
-| Screenshot for the report | save the screenshot | `take_screenshot` with `filePath` (saved on the machine running Claude Code) |
+| Screenshot for the report | save the screenshot | `take_screenshot` with `filePath`, saved on the machine running Claude Code and only inside the working folder (paths such as `/tmp` are refused) |
 | Page structure, find elements | `read_page`, `find` | `take_snapshot` (gives the `uid`s) |
 | Page text | `get_page_text` | `take_snapshot`, or `evaluate_script` with `() => document.body.innerText` |
 | Click, type, keys | `computer`, `form_input` | `click`, `fill`, `fill_form`, `type_text`, `press_key` (by `uid`) |
