@@ -13,7 +13,7 @@ Judge the changes against the contract, not against taste: **does the code do wh
 
 `git status --short` and `git diff HEAD --stat` for the extent. For a phase review also `git diff <base>...HEAD --stat`, because the phase diff is what the gate is about.
 
-**A new entry into an existing path widens the scope.** Where the diff adds a new way in (a route, a button, a caller), the path from there to the place that reads or shows the result belongs to the review, even where those lines are old: a new way to create entries is broken if the existing list filters them out.
+**A new entry into an existing path widens the scope.** Where the diff adds a new way in (a route, a button, a caller), the path from there to the place that shows the written data again (list, detail view, and any filter in between) belongs to the review, even where those lines are old: a new way to create entries is broken if the existing list filters them out.
 
 Cluster the files by the areas that have their own area CLAUDE.md. Above roughly thirty changed files, review cluster by cluster, riskiest first.
 
@@ -88,7 +88,7 @@ Five severities: exploitable without authentication or destroying data; exploita
 
 More than a couple in the top band usually means validation was skipped. Between two bands, take the lower; inflation costs the report its credibility on the one day it matters.
 
-The report goes to `.claude/plans/<plan file name>-review.md`, next to the phase plan, where `retro` and the next run find it. It carries: the verdict, the specs consulted, the findings (location, lens, violated rule, demonstration, suggested fix), the **gate comparison** item by item, the test gaps, what was solved well, the **candidates for retro**. A gate item that cannot be checked without a running system is "not checkable", never "met", and names the flow a `handlauf` walkthrough would have to cover to check it: this is what the user reads before releasing. Say what was clean; "checked and clean" is information.
+The report goes to `.claude/plans/<plan file name>-review.md`, next to the phase plan, where `retro` and the next run find it. It carries: the verdict, the specs consulted, the findings (location, lens, violated rule, demonstration, suggested fix), the **gate comparison** item by item, the test gaps, what was solved well, the **candidates for retro**. A gate item that cannot be checked without a running system is "not checkable", never "met", and always names the check the user makes on the running system (where to click, what has to appear), which is also the flow a `handlauf` walkthrough covers: this is what the user reads before releasing. Say what was clean; "checked and clean" is information.
 
 ## Phase 3: Spec backflow
 
