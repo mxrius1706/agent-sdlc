@@ -50,6 +50,7 @@ Pick per surface, do not run everything everywhere. Every line you pick becomes 
 
 ## 6. Permissions and scope (batched at the end, with an account switch)
 - Read-only: writing buttons absent, or disabled with a reason; a direct API write returns 403.
+- No read permission: every way in is closed. The menu entry is absent; the deep link ends in a clear refusal, not an error page or an empty shell; notifications and lists link nowhere the role cannot open.
 - A foreign scope without full visibility: the list is empty or without the foreign rows, and the detail URL returns 404 rather than 403 - a 403 reveals that the record exists.
 - Shared scope: visible to everyone with read access, changeable only with both the permission and the scope.
 - Hidden names: not in text, not in a diagram, not in a tooltip, and not in the JSON of the response either.

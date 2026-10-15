@@ -75,7 +75,7 @@ After every action, **three looks**:
 - **The network** (with Claude in Chrome, read it once before the action so capture is running): 4xx/5xx, duplicate or unnecessary calls, slow responses.
 - **Console and log:** console messages filtered to `error|warn|Uncaught|hydration`, plus the monitor messages.
 
-**Does it make sense?** At every dialog, field and button, ask as the user: why am I being asked this? Does the system not know it already? What would I enter without prior knowledge? Does the page offer the next step? A step that only a tester's knowledge fills in correctly is a finding, however clean it looks.
+**Does it make sense?** At every dialog, field and button, ask as the user: why am I being asked this? Does the system not know it already? What would I enter without prior knowledge? Does the page offer the next step? A step that only a tester's knowledge fills in correctly is a finding, however clean it looks; name what the user would expect instead.
 
 **Verify that it is really saved:** reload, reopen the page, or read the data through topic `data access` (a read-only API route or database access; no row: reload and reopen only, and name the gap). A success toast is not proof.
 
@@ -91,7 +91,7 @@ For **every** page checked, with a screenshot and the phase 2 look:
 - **Narrow** (390 x 844): no horizontal page scroll, nothing overlapping, main action reachable.
 - **Keyboard:** tab order, visible focus, Escape, Enter.
 
-**Roles in one batch** at the end: send the user the list (account, role, scope, what will be checked), wait, verify the session, check, then ask to be switched back.
+**Roles in one batch** at the end: send the user the list (account, role, scope, what will be checked), wait, verify the session, check, then ask to be switched back. Every role covers two fixed cases from `references/edge-cases.md` section 6: the pages it may not write, and the pages it may not read.
 
 ## Phase 5 - close
 
