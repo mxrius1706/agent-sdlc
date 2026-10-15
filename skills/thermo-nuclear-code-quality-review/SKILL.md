@@ -166,6 +166,15 @@ Prioritize findings in this order:
 Do not flood the review with low-value nits if there are larger structural issues.
 Prefer a smaller number of high-conviction comments over a long list of cosmetic notes.
 
+## Follow-up Run
+
+When the review runs again after a round of fixes, review only the fix diff against the previous run's findings:
+
+- For each previous finding: resolved or not, judged against the finding as written.
+- New findings inside the fix diff: a presumptive blocker or a miss of the approval bar below counts and goes back for fixing. Lesser notes (naming, legibility, small cleanups) are collected in the report and open no further fix round.
+
+Run the full review instead when the fix diff reaches areas the previous run did not cover, or touches the schema.
+
 ## Approval Bar
 
 Do not approve merely because behavior seems correct.

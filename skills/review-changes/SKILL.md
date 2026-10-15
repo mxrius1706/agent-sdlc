@@ -88,7 +88,7 @@ Five severities: exploitable without authentication or destroying data; exploita
 
 More than a couple in the top band usually means validation was skipped. Between two bands, take the lower; inflation costs the report its credibility on the one day it matters.
 
-The report goes to `.claude/plans/<plan file name>-review.md`, next to the phase plan, where `retro` and the next run find it. It carries: the verdict, the specs consulted, the findings (location, lens, violated rule, demonstration, suggested fix), the **gate comparison** item by item, the test gaps, what was solved well, the **candidates for retro**. A gate item that cannot be checked without a running system is "not checkable", never "met", and always names the check the user makes on the running system (where to click, what has to appear), which is also the flow a `handlauf` walkthrough covers: this is what the user reads before releasing. Say what was clean; "checked and clean" is information.
+The report goes to `.claude/plans/<plan file name>-review.md`, next to the phase plan, where `retro` and the next run find it. It carries: the reviewed commit, the verdict, the specs consulted, the findings (location, lens, violated rule, demonstration, suggested fix), the **gate comparison** item by item, the test gaps, what was solved well, the **candidates for retro**. A gate item that cannot be checked without a running system is "not checkable", never "met", and always names the check the user makes on the running system (where to click, what has to appear), which is also the flow a `handlauf` walkthrough covers: this is what the user reads before releasing. Say what was clean; "checked and clean" is information.
 
 ## Phase 3: Spec backflow
 
@@ -97,6 +97,15 @@ Often **the spec** is the problem: a rule that cannot be built as written, two d
 ## Phase 4: Candidates for retro
 
 A finding in the top two bands may be a class of defect rather than an incident. Collect candidates in their own section at the end: the generalised class without file paths, the location of this instance, and whether it looks mechanical (a check could catch it) or a judgement call. Whether it is a second occurrence is for `retro` to decide, which counts in `CODING_STANDARDS.md`. Nothing is written here.
+
+## Follow-up run
+
+After a round of fixes, the next run is a **follow-up run**: its input is the fix diff (`git diff <commit the last report names>...HEAD`) and the last report's findings, and one reviewer on the strong model carries all three lenses over it. It answers two things:
+
+1. **Per previous finding:** fixed or not, judged against the finding as written, with the location of the fix.
+2. **New findings in the fix diff.** Those in the top four bands count as findings. Informational ones are collected in the report and open no further fix round.
+
+A full run stays necessary when the fix diff reaches areas the last run did not cover, or touches the schema. The follow-up report goes next to the first as `<plan file name>-review-<n>.md`.
 
 ## Anti-hallucination rules
 
