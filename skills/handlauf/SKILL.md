@@ -31,7 +31,7 @@ It reads intent, not judgement: the phase plan (goal, gate, decisions), the page
 
 ## Phase 0 - understand, do not tick off
 
-1. **The surfaces** from the request, or derived from the phase plan and briefly confirmed.
+1. **The surfaces** from the request, or derived from the phase plan and briefly confirmed. Then cross-check against the code: from `git diff <base>...HEAD --stat`, the pages and components the phase touched, plus the pages that use a changed component (search for its imports, following how the project routes pages). Whatever turns up and is not in scope goes to the user, who decides; this catches pages changed along the way.
 2. **Get oriented**, a few minutes per surface. What is the page for, who uses it, what is the main path? Sources as above. Gate sentences become mandatory flows.
 3. **An inventory, not a spec matrix**, written into the report file from `references/report-template.md`. Per surface:
    - the **states** to be seen (empty, one row, many, long, loading, error, locked, archived, draft, preview),
@@ -45,7 +45,7 @@ It reads intent, not judgement: the phase plan (goal, gate, decisions), the page
 What is specific to the project comes from the rows for `handlauf` in the root CLAUDE.md section `Project references`. Each step below names its topic and what to do when the row is missing; every missing row is named in the report under the environment section.
 
 1. **Load the browser skill** for the project's browser (topic `browser`; no row: the browser the user has connected), and the tools you expect to need in **one** `ToolSearch` call. Which tools those are depends on the family the session has, Claude in Chrome or Chrome DevTools: `references/browser-tools.md` maps every purpose below to its tool in both.
-2. **A dev server with a log.** Reuse one from this session if it has a log; otherwise start it through `scripts/start-dev-logged.sh <logfile>` with `run_in_background`, after asking the user. The values come from topic `dev server` (command, directory, port, health URL, build marker, error markers), set as the `HL_*` variables the two scripts list in their headers. No row: ask the user for command and port.
+2. **A dev server with a log.** Reuse one from this session if it has a log; otherwise start it through `scripts/start-dev-logged.sh <logfile>` with `run_in_background`, after asking the user. The values come from topic `dev server` (command, directory, port, health URL, build marker, error markers), set as the `HL_*` variables the two scripts list in their headers. Where the app does not sit at the repository root (a monorepo, an app in a subfolder), the row sets the directory as `HL_DIR`. No row: ask the user for command and port.
 3. **Watch the log**: a `Monitor` on `scripts/watch-dev-log.sh <logfile>`, `timeout_ms` at maximum, re-armed on expiry. Assign every message to the step running when it appeared.
 4. **Your own window**: a tab of your own, size fixed at 1440 x 900 so screenshots are comparable.
 5. **Check the session**: account, role, permissions. Test accounts and roles come from topic `accounts`, a pointer to where they are kept, never the credentials themselves. No row, or expired: ask the user.
@@ -74,6 +74,8 @@ After every action, **three looks**:
 - **The page:** what changed, is it understandable, is there feedback (toast, status change, focus), is the new state cleanly presented (the phase 2 look again)?
 - **The network** (with Claude in Chrome, read it once before the action so capture is running): 4xx/5xx, duplicate or unnecessary calls, slow responses.
 - **Console and log:** console messages filtered to `error|warn|Uncaught|hydration`, plus the monitor messages.
+
+**Does it make sense?** At every dialog, field and button, ask as the user: why am I being asked this? Does the system not know it already? What would I enter without prior knowledge? Does the page offer the next step? A step that only a tester's knowledge fills in correctly is a finding, however clean it looks.
 
 **Verify that it is really saved:** reload, reopen the page, or read the data through topic `data access` (a read-only API route or database access; no row: reload and reopen only, and name the gap). A success toast is not proof.
 

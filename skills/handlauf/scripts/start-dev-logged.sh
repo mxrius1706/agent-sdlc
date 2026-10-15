@@ -9,7 +9,8 @@
 # section "Project references" and are passed as environment variables. The script
 # itself stays global; a project copy would stop receiving toolkit updates.
 #
-#   HL_DIR           directory to run in            default: the repository root
+#   HL_DIR           directory to run in            default: the current directory if it
+#                                                   holds a package.json, else the repository root
 #   HL_CMD           the dev server command         default: npm run dev
 #   HL_PORT          port it listens on             default: 3000
 #   HL_HEALTH        URL that answers 200 when up   default: http://localhost:$HL_PORT/
@@ -23,7 +24,13 @@ set -uo pipefail
 
 LOG="${1:?usage: start-dev-logged.sh <logfile>}"
 
-DIR="${HL_DIR:-$(git rev-parse --show-toplevel)}"
+if [ -n "${HL_DIR:-}" ]; then
+    DIR="$HL_DIR"
+elif [ -f package.json ]; then
+    DIR="$PWD"
+else
+    DIR="$(git rev-parse --show-toplevel)"
+fi
 CMD="${HL_CMD:-npm run dev}"
 PORT="${HL_PORT:-3000}"
 HEALTH="${HL_HEALTH:-http://localhost:$PORT/}"
@@ -32,8 +39,17 @@ BUILD_MARKER="${HL_BUILD_MARKER-.next/BUILD_ID}"
 cd "$DIR" || exit 1
 
 # Someone else's server on the port is the most common way a run starts against the
-# wrong build without anyone noticing.
-if (netstat -ano 2>/dev/null || ss -ltn 2>/dev/null) | grep -E "[:.]$PORT[^0-9]" >/dev/null; then
+# wrong build without anyone noticing. lsof on macOS, ss on Linux, netstat on Windows.
+port_taken() {
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1
+    elif command -v ss >/dev/null 2>&1; then
+        ss -ltn 2>/dev/null | grep -E "[:.]$PORT[^0-9]" >/dev/null
+    else
+        netstat -ano 2>/dev/null | grep -E "[:.]$PORT[^0-9].*LISTEN" >/dev/null
+    fi
+}
+if port_taken; then
     echo "PORT_TAKEN: port $PORT is in use; ask the user before restarting their server"
     exit 2
 fi

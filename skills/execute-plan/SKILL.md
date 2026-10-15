@@ -47,7 +47,7 @@ Put the blocks in a todo list, grouped by wave.
 
 One file in the scratchpad, `rules-bundle-<phase>.md`, written before the first dispatch and reused by every subagent of the phase:
 
-- The binding rules from the root CLAUDE.md sections `Architecture rules`, `Security baseline`, `Testing requirements` and `Definition of done`.
+- The binding rules from the root CLAUDE.md sections `Architecture rules`, `Security baseline`, `Testing requirements` and `Definition of done`, or their counterparts in the project's language.
 - The path rules that will match in this phase: every file in `.claude/rules/` whose `paths:` frontmatter hits one of the plan's critical files, **content copied in**, not named.
 - The **glossary terms** relevant to the phase's areas (from `GLOSSARY.md` in the knowledge base, reached through the knowledge base map in the root instructions), **content copied in**, including each term's `_Avoid_` aliases. A path in a prompt is a request; the terms themselves are simply there.
 - The verification commands and what green means.
@@ -105,7 +105,7 @@ After a block, change an input before re-dispatching; repeating unchanged is a l
 A fresh reviewer (`model: "sonnet"`) reads the block's diff (`git diff <phase-branch>...HEAD` in the worktree), the plan's text for the block's tasks, the rules bundle and, if the repo has one, `CODING_STANDARDS.md` (judgement rules that only reviewers read; implementers never get it). Names in the diff are checked against the glossary terms in the bundle. It answers two questions in one pass, in this order:
 
 1. **Spec:** Is every task of the block implemented as the plan says? Is anything built the plan did **not** ask for? Do paths, names, types, constraints match? Is the written thing visible where the plan promises it?
-2. **Quality:** the project's checklist from the bundle, security invariants by name from the root section `Security baseline` (authentication, authorisation, CSRF, rate limit, validation, audit trail, integrity chains, no hardcoded secrets), tests for new logic including failure cases.
+2. **Quality:** the project's checklist from the bundle, security invariants by name from the root section `Security baseline` or its counterpart in the project's language (authentication, authorisation, CSRF, rate limit, validation, audit trail, integrity chains, no hardcoded secrets), tests for new logic including failure cases.
 
 Severity in four steps: exploitable or data-destroying; breaks a binding project rule or a plan decision (including scope creep); weakens a defence or leaves a test gap; cosmetic. **The first two block. The rest are collected** for the phase gate.
 

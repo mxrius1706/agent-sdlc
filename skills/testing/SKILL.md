@@ -9,7 +9,7 @@ description: "Test discipline: test first, watch it fail, then build. Use before
 
 A test written after the implementation proves nothing: it passes immediately and checks what was built rather than what was asked for.
 
-This skill carries the discipline. The mechanics (framework, where test files live, how dependencies are stubbed, expected coverage) come from the root section `Testing requirements` and the source of row `testing` / `test patterns` in the root CLAUDE.md section `Project references`. No row: take the nearest existing tests as prior art and name the missing row. A project with neither fixes that gap first; everything below assumes one answer to "how do we write a test here".
+This skill carries the discipline. The mechanics (framework, where test files live, how dependencies are stubbed, expected coverage) come from the root section `Testing requirements` (or its counterpart in the project's language) and the source of row `testing` / `test patterns` in the root CLAUDE.md section `Project references`. No row: take the nearest existing tests as prior art and name the missing row. A project with neither fixes that gap first; everything below assumes one answer to "how do we write a test here".
 
 ## The cycle
 
@@ -22,6 +22,8 @@ This skill carries the discipline. The mechanics (framework, where test files li
 **Verify red is not optional.** A test green immediately tests behaviour that already existed, or the wrong thing.
 
 **A red for the wrong reason is not a red.** An import error, a typo, a missing fixture proves nothing about the behaviour. Run again until it fails for the intended reason.
+
+**For a bug fix, the red test is the reproduction** of the reported failure, run against the unfixed code. Repair only once it is red for that reason; a fix whose test would also pass on the old code proves nothing.
 
 **Refactor only on green.** Mixed concerns are impossible to debug: two things changed and only one was supposed to.
 
@@ -45,7 +47,7 @@ Derive them from what the project has decided. Three sources, each producing a d
 
 **The specs.** Every acceptance criterion is a test case, and the requirements say what the failure paths are. A spec's acceptance criteria are the closest thing to a ready-made test list any project has.
 
-**The project's binding rules.** Whatever the root sections `Architecture rules` and `Security baseline` make mandatory on a path - an authorisation check, an audit entry, a validation boundary, a value that must come from the session rather than the request - is a case. The test is not that it is implemented; it is that it cannot be bypassed. "The identity comes from the session even when the request supplies a different one" is worth more than any number of happy paths.
+**The project's binding rules.** Whatever the root sections `Architecture rules` and `Security baseline` (or their counterparts in the project's language) make mandatory on a path - an authorisation check, an audit entry, a validation boundary, a value that must come from the session rather than the request - is a case. The test is not that it is implemented; it is that it cannot be bypassed. "The identity comes from the session even when the request supplies a different one" is worth more than any number of happy paths.
 
 **The accepted decisions.** A decision that forbids something needs a test that the forbidden thing fails. That is what keeps a decision alive after the person who made it has moved on.
 

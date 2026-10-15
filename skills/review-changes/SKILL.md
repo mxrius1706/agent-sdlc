@@ -13,6 +13,8 @@ Judge the changes against the contract, not against taste: **does the code do wh
 
 `git status --short` and `git diff HEAD --stat` for the extent. For a phase review also `git diff <base>...HEAD --stat`, because the phase diff is what the gate is about.
 
+**A new entry into an existing path widens the scope.** Where the diff adds a new way in (a route, a button, a caller), the path from there to the place that reads or shows the result belongs to the review, even where those lines are old: a new way to create entries is broken if the existing list filters them out.
+
 Cluster the files by the areas that have their own area CLAUDE.md. Above roughly thirty changed files, review cluster by cluster, riskiest first.
 
 ## Phase 0b: Load the governing specs
@@ -39,7 +41,7 @@ Depth comes from **one lens per head**.
 
 | Lens | Question |
 |---|---|
-| **Security** | How do I break this? Authentication, scope, input validation, error leakage, auditing, the root section `Security baseline` |
+| **Security** | How do I break this? Authentication, scope, input validation, error leakage, auditing, the root section `Security baseline` or its counterpart in the project's language |
 | **Spec fidelity** | Line against document: requirements met, contracts kept, acceptance criteria achievable? Open point silently decided? Accepted decision violated? |
 | **Structure** | Does it fit the house? Existing patterns, naming, error catalogue, edge cases, state transitions, query behaviour, dead code, tests, front/back contract. Plus the standards, glossary and smell baseline below |
 
@@ -86,7 +88,7 @@ Five severities: exploitable without authentication or destroying data; exploita
 
 More than a couple in the top band usually means validation was skipped. Between two bands, take the lower; inflation costs the report its credibility on the one day it matters.
 
-The report goes to `.claude/plans/<plan file name>-review.md`, next to the phase plan, where `retro` and the next run find it. It carries: the verdict, the specs consulted, the findings (location, lens, violated rule, demonstration, suggested fix), the **gate comparison** item by item, the test gaps, what was solved well, the **candidates for retro**. A gate item that cannot be checked without a running system is "not checkable", never "met": this is what the user reads before releasing. Say what was clean; "checked and clean" is information.
+The report goes to `.claude/plans/<plan file name>-review.md`, next to the phase plan, where `retro` and the next run find it. It carries: the verdict, the specs consulted, the findings (location, lens, violated rule, demonstration, suggested fix), the **gate comparison** item by item, the test gaps, what was solved well, the **candidates for retro**. A gate item that cannot be checked without a running system is "not checkable", never "met", and names the flow a `handlauf` walkthrough would have to cover to check it: this is what the user reads before releasing. Say what was clean; "checked and clean" is information.
 
 ## Phase 3: Spec backflow
 
@@ -108,4 +110,4 @@ A finding in the top two bands may be a class of defect rather than an incident.
 
 **Use what the platform guarantees.** Theoretical bugs that frameworks, query builders and validation layers close are not findings.
 
-**Respect the scope.** A finding in code this change did not touch is informational.
+**Respect the scope.** A finding in code this change did not touch is informational, except on the path a new entry leads through (Phase 0): there it counts like one in the diff.
