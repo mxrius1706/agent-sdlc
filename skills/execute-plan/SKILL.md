@@ -51,6 +51,7 @@ One file in the scratchpad, `rules-bundle-<phase>.md`, written before the first 
 - The path rules that will match in this phase: every file in `.claude/rules/` whose `paths:` frontmatter hits one of the plan's critical files, **content copied in**, not named.
 - The **glossary terms** relevant to the phase's areas (from `GLOSSARY.md` in the knowledge base, reached through the knowledge base map in the root instructions), **content copied in**, including each term's `_Avoid_` aliases. A path in a prompt is a request; the terms themselves are simply there.
 - The verification commands and what green means.
+- The **commit trailer**, verbatim: the one the root instructions name, else the one on the latest commits of the main branch. Every subagent ends every commit with exactly this trailer; it takes precedence over any attribution line the harness suggests.
 - The worktree contract (step 4).
 
 Subagents read the bundle and the plan file themselves; the coordinator passes paths, block id and task ids.
@@ -111,7 +112,13 @@ Severity in four steps: exploitable or data-destroying; breaks a binding project
 
 Answer: `APPROVED` with collected findings, or `CHANGES_REQUIRED` with the blocking list (file:line, rule, fix).
 
-**Blocking findings:** a fresh fixer (`model: "sonnet"`) in the same worktree, one fix commit, then the reviewer checks **only the fix diff and the findings**. Two rounds without green: go to the user.
+**Blocking findings:** a fresh fixer (`model: "sonnet"`) in the same worktree, one fix commit, then the reviewer checks **only the fix diff and the findings**: each finding fixed as the reviewer wrote it, and its test shown red on the unfixed code for the finding's reason. Two rounds without green: go to the user.
+
+### Fix briefs
+
+Every fixer, whether for a block finding, a red wave or a phase gate finding, gets the finding **verbatim** as its reviewer wrote it: location, damage path, violated rule. A shortened finding gets the shortened version fixed, and its test then proves the brief instead of the finding; every later gate round finds the remainder.
+
+The fix starts with a test that reproduces the finding, run once against the unfixed code and **red** for the finding's reason. The fixer's answer quotes that red run (command and failing assertion); without it the fix is not done.
 
 **Exclusive blocks** (schema, container composition, integrity-critical code, and the paths in row `planning` / `exclusive areas`) get the same single review, with the plan's rules for exactly that area called out by name in the brief.
 
@@ -121,7 +128,7 @@ In the order blocks finish.
 
 1. **Rebase** the block branch onto the current phase head inside the worktree. Clean rebase with disjoint file sets: the review holds. Conflict: a fresh subagent resolves it, the reviewer checks only the resolved files.
 2. **Type check** in the worktree after the rebase.
-3. **Merge** from the main checkout: `git checkout <phase-branch> && git merge --no-ff <block-branch>`. The merge commit records the block as a reviewed unit.
+3. **Merge** from the main checkout: `git checkout <phase-branch> && git merge --no-ff <block-branch>`. Before it, check that every block commit ends in the bundle's trailer (`git log --format=%B <phase-branch>..<block-branch>`); a missing or different trailer is corrected on the block branch first. The merge commit records the block as a reviewed unit.
 4. **Remove** worktree and branch (see the reference), branch with `-d`: one that refuses to delete has unmerged commits, and that is information.
 5. **Schema changed?** Apply the migration to the dev database and re-run the code generation from the main checkout before any further worktree opens; a worktree from a stale phase head gets a stale client and fails in confusing ways.
 
