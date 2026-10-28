@@ -9,7 +9,7 @@ Every session starts with an empty context window. What the last one learned is 
 
 ## Where it goes and what it looks like
 
-Into `.claude/state.md`, overwritten each time. It answers *what happened last time*; where the project stands belongs to the roadmap, never to this file.
+Into `.claude/state.md`, overwritten each time. Where several sessions share one repository, each has its own file, set by the environment variable `PROJECT_STATE` and named in the session-start context and in the farewell hook's instruction; then that file, never `state.md`. It answers *what happened last time*; where the project stands belongs to the roadmap, never to this file.
 
 ### Shape
 

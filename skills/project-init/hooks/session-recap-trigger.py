@@ -34,6 +34,7 @@ Sprachen ergaenzen ist richtig, Alltagswoerter ergaenzen nicht.
 """
 
 import json
+import os
 import sys
 
 PATTERNS = (
@@ -47,9 +48,13 @@ PATTERNS = (
     "that's it for today",
 )
 
+# Teilen sich mehrere Sitzungen ein Repo, hat jede ihre eigene Uebergabe
+# (PROJECT_STATE, wie in session-state.py).
+STATE_FILE = os.environ.get("PROJECT_STATE") or ".claude/state.md"
+
 INSTRUCTION = (
     "PFLICHT: Fuehre zuerst den Skill 'session-recap' aus, bevor du antwortest. "
-    "Er schreibt die Uebergabe nach .claude/state.md und prueft dabei den Fahrplan "
+    "Er schreibt die Uebergabe nach " + STATE_FILE + " und prueft dabei den Fahrplan "
     "in der Wissensbasis: hat diese Sitzung einen Schritt abgeschlossen, wird er "
     "dort eingetragen, bevor die Uebergabe geschrieben wird."
 )

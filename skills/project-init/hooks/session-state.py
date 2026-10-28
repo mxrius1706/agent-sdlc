@@ -6,6 +6,8 @@ Zwei Dateien, zwei Fragen:
   Er liegt in der Wissensbasis ausserhalb des Repos, deshalb muss sein Pfad
   hier konfiguriert werden (siehe roadmap_path unten).
 - Die **Uebergabe** in `.claude/state.md` sagt, was letzte Sitzung lief.
+  Teilen sich mehrere Sitzungen ein Repo, bekommt jede ihre eigene Datei:
+  Umgebungsvariable `PROJECT_STATE`, relativ zum Projekt oder absolut.
 
 Beide werden injiziert statt nur erwaehnt. Eine Anweisung, eine Datei zu
 lesen, ist eine Bitte; injizierter Inhalt liegt einfach da. Genau deshalb
@@ -158,12 +160,19 @@ def roadmap_path(project_dir):
     return os.path.join(project_dir, "roadmap.md")
 
 
+def state_path(project_dir):
+    from_env = os.environ.get("PROJECT_STATE")
+    if from_env:
+        return os.path.join(project_dir, os.path.expanduser(from_env))
+    return os.path.join(project_dir, ".claude", "state.md")
+
+
 def main() -> None:
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR", ".")
 
     roadmap = roadmap_for_session(roadmap_path(project_dir))
 
-    handoff_path = os.path.join(project_dir, ".claude", "state.md")
+    handoff_path = state_path(project_dir)
     handoff = read_file(handoff_path)
     if handoff:
         handoff = clip(handoff, MAX_HANDOFF_CHARS, handoff_path)
@@ -175,7 +184,8 @@ def main() -> None:
     if roadmap:
         parts.append("FAHRPLAN (wo steht das Projekt, was kommt als Naechstes)\n" + roadmap)
     if handoff:
-        parts.append("LETZTE SITZUNG (aus .claude/state.md)\n" + handoff)
+        shown = os.path.relpath(handoff_path, project_dir)
+        parts.append("LETZTE SITZUNG (aus " + shown + ")\n" + handoff)
 
     if roadmap:
         parts.append(

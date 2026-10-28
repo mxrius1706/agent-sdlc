@@ -2,6 +2,8 @@
 
 `.claude/state.md` carries what happened in the last session, and nothing else. A SessionStart hook injects it before the first prompt.
 
+Where several sessions share one repository (one per area, each in its own working copy), each gets its own handoff file: set `PROJECT_STATE` to its path in that working copy's `.claude/settings.local.json` under `env`. Both hooks and `session-recap` follow it.
+
 It is committed, not ignored. What was done last session is a fact about the project, and an ignored file is gone after a machine change.
 
 ## Handoff vs roadmap
