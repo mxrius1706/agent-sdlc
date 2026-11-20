@@ -189,6 +189,8 @@ In the order blocks finish.
 
 All waves merged and green: hand over to the phase gate. The stage in the plan decides its shape. The reviews keep their full depth on the strong model. The whole-phase review is dispatched as `gate-reviewer`.
 
+**Run the gate without asking.** Work the steps below one after the other and report once at the end. Stop only for: `handlauf` (the user starts it), the release go, a `BLOCKED` block, the Auslauf mark, or a decision only the user can make. "Shall I run the next step?" is not a stop. A plan without a stage (written before `plan-check.py`) is treated as stage M.
+
 **Every stage starts the same way:** run `gate-precheck.py` (in `review-changes`'s `scripts/`) over the phase diff and fix every FAIL before any reviewer starts. It is mechanical and costs no model.
 
 **Stages S and M:**
