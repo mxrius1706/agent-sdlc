@@ -64,7 +64,7 @@ flowchart TD
     H --> I[post-edit-check: schnelle<br/>Checks nach jedem Edit]
     I --> H
     H --> HL[handlauf: eigene Sitzung,<br/>kein Review-Input]
-    H --> J[Code-Gates: review-changes +<br/>thermo-nuclear]
+    H --> J[Gates je Stufe: gate-precheck, review-changes,<br/>thermo-nuclear bei Auslöser]
     HL --> K
     J --> K[Rückfluss: write-spec]
     K --> D
@@ -268,13 +268,15 @@ Im Abschnitt Tests nennt jedes Testziel seine **Schnittstelle**: die öffentlich
 
 Diese Entscheidung gehört in den Plan und nicht ins Bauen, weil nur hier noch jemand den Überblick über alle Dateien hat. Drei oder vier Wellen sind normal; zehn sind ein Zeichen, dass die Blöcke zu klein geschnitten sind.
 
+`scripts/plan-check.py` setzt dafür Zahlen statt Gefühl: `depth` legt die Planungstiefe fest, `stage` die **Stufe** (S, M oder L), `lint` prüft den Plan vor der Freigabe auf Tabellen, Blöcke und Wellen. Die Stufe bestimmt später, wie jeder Block startet und wie tief das Phasen-Gate läuft.
+
 Entscheidungen, die während des Bauens fallen, wandern **sofort** in den Entscheidungsabschnitt der Plandatei, nicht am Ende. Was am Ende nachgetragen wird, ist Rekonstruktion und nicht Protokoll.
 
 ### 5. Bauen
 
 **Skill:** `execute-plan`, dazu Hooks nach jeder Dateiänderung
 
-**Die Einheit ist der Block, nicht der einzelne Task.** Je Block ein **frischer Subagent**, ein **eigener git-Worktree** auf einem Block-Branch am Phasen-Branch, und **ein** Review. Bis zu drei Blöcke einer Welle laufen gleichzeitig. Der Koordinator kuratiert Kontext, verwaltet Branches und urteilt — er schreibt selbst keinen Code: Wer selbst implementiert, füllt seinen Kontext mit Detail, das in einen Subagenten gehört, und hat danach niemanden mehr mit Außensicht.
+**Die Einheit ist der Block, nicht der einzelne Task.** Je Block ein **frischer Subagent** in einer benannten Rolle, ein **eigener git-Worktree** auf einem Block-Branch am Phasen-Branch, und **ein** Review. Ab Stufe M schreibt zuerst der `acceptance-writer` die roten Tests des Blocks, dann macht der `block-implementer` sie grün, ohne sie zu ändern; `block-reviewer` und `block-fixer` folgen, das Phasen-Gate übernimmt der `gate-reviewer`. Jede Rolle startet ohne die Projekt-`CLAUDE.md` und mit einem `maxTurns` in ihrer Agentendatei. Bis zu drei Blöcke einer Welle laufen gleichzeitig. Der Koordinator kuratiert Kontext, verwaltet Branches und urteilt - er schreibt selbst keinen Code: Wer selbst implementiert, füllt seinen Kontext mit Detail, das in einen Subagenten gehört, und hat danach niemanden mehr mit Außensicht.
 
 **Geschwindigkeit kommt aus weniger Übergaben, nicht aus schwächeren Prüfungen.** Jede Übergabe — Worktree, Dispatch, Review, Rebase, Merge, Testlauf — kostet Minuten. Ein Plan, der in zwanzig Einzeltasks zerfällt, zahlt das zwanzigmal; fünf Blöcke zahlen es fünfmal. Dass ein Block mit einem Review auskommt, ist nur deshalb vertretbar, weil am Phasenende die beiden Gates in voller Tiefe stehen. Das Netz rechtfertigt den Sprung, nicht umgekehrt.
 
@@ -284,9 +286,15 @@ Der Block-Review beantwortet beide alten Fragen in einem Durchgang, in dieser Re
 
 Integriert wird in der Reihenfolge, in der Blöcke fertig werden: Rebase auf den aktuellen Phasen-Kopf, Typprüfung, Merge mit `--no-ff`, Worktree und Branch weg. Der Merge-Commit hält fest, dass dieser Block als geprüfte Einheit hereinkam. **Erst wenn alle Blöcke einer Welle drin sind**, läuft die volle Testsuite einmal auf dem Phasen-Branch — grün öffnet die nächste Welle, rot sucht den Block, der es gebrochen hat.
 
-Was der Subagent nicht im Bündel hat, existiert für ihn nicht. Das Bündel wird aber **einmal je Phase** geschrieben und von allen Subagenten gelesen, statt in jeden Prompt kopiert zu werden. Genau das machte vorher jeden Dispatch groß und langsam. Die bindenden Regeln stehen darin als **Inhalt**, nicht als Pfad: Ein Pfad im Prompt ist eine Bitte.
+Was der Subagent nicht im Paket hat, existiert für ihn nicht. Das Paket baut `scripts/context-pack.py` **je Block** aus dem, was die Dateien und Anforderungen des Blocks berühren: die Abschnitte `## Für Subagenten`, Bereichsregeln, passende Pfadregeln, Spec-Abschnitte nach Anforderungskennung, Glossarbegriffe, die Entscheidungen des Plans, Verifikationsbefehle, Trailer und Worktree-Vertrag. Der Koordinator reicht nur den Pfad weiter, statt Inhalt in jeden Prompt zu kopieren. Die bindenden Regeln stehen darin als **Inhalt**, nicht als Pfad: Ein Pfad im Prompt ist eine Bitte.
+
+Zu jedem Paket gehört ein **Manifest** mit Hash, den eingeschlossenen und den nicht eingeschlossenen Abschnitt-IDs und Hinweisen wie „kein Glossar gefunden“. Dasselbe Paket ergibt dieselben Bytes und denselben Hash. Ein zu großes Paket wird **nie abgeschnitten**, denn Abgeschnittenes sieht in der Sitzung vollständig aus; das Skript endet mit Exit 3, und der Block wird geteilt. Das von Hand geschriebene Bündel bleibt nur der Rückfall, wenn das Skript nicht läuft.
 
 Parallel dazu die **Sofortprüfung**: Der Hook `post-edit-check.py` führt nach jedem Edit die schnellen Checks aus `.claude/checks.json` aus, Typprüfung und Lint der gerade bearbeiteten Datei (Platzhalter `{file}`), festgelegt bei der Testing-Frage in `stack-decisions` und von `project-init` einmal probeweise ausgeführt, bevor sie eingetragen werden. Schlägt einer fehl, sieht der Agent den Fehler sofort, solange die Änderung noch frisch ist. Ein Fehler, der sofort zurückkommt, kostet einen Gedanken. Derselbe Fehler zwanzig Änderungen später kostet eine Suche. Langsame Prüfungen gehören nicht hinein; die volle Suite läuft je Welle.
+
+**Budgets** begrenzen den Lauf: `maxTurns` je Rolle, ein Phasenbudget als Zeile `budget` in den Entscheidungen des Plans und nach jeder Welle ein Lauf von `session-cost.py`, der dem Nutzer meldet, wenn das Budget überschritten ist. Ein Block ohne neuen Commit über 20 Minuten wird geprüft und mit geänderter Eingabe neu gestartet oder an den Nutzer gegeben.
+
+**Auslauf.** Der Hook `auslauf.py` legt bei vollem Kontext eine Marke in `.claude/run/` an; dann startet nichts Neues mehr, laufende Blöcke werden beendet, der Laufzustand `.claude/run/<phase>.md` wird aktualisiert (mit je einer Zeile `Paket <Block>: <Pfad>` im Kopf) und `session-recap` läuft. Die neue Sitzung macht an diesem Laufzustand weiter.
 
 **Tests** folgen `testing`: kein Produktionscode ohne zuerst fehlschlagenden Test, und **Verify Red ist Pflicht**. Wer den Fehlschlag nicht gesehen hat, weiß nicht, ob der Test das Richtige prüft. Welche Fälle Pflicht sind, leitet der Skill aus dem Projekt ab statt aus einem Katalog: aus den Akzeptanzkriterien der Specs, aus den bindenden Regeln der Wurzel und aus den getroffenen Entscheidungen. Ein Verbot, das keinen Test hat, überlebt den, der es beschlossen hat, nicht. Getestet wird an den Schnittstellen aus dem Plan, gemockt nur an Systemgrenzen, und ein Erwartungswert kommt aus einer unabhängigen Quelle statt aus derselben Rechnung wie der Code. Wird ein Test auf bestehendem Code unerwartet rot, ist das kein Anlass zum Nachbessern, bis er grün ist, sondern ein Fehler, und Fehler gehen an `diagnosing-bugs`.
 
@@ -294,9 +302,12 @@ Parallel dazu die **Sofortprüfung**: Der Hook `post-edit-check.py` führt nach 
 
 **Skills:** `handlauf`, `review-changes`, `thermo-nuclear-code-quality-review`
 
-Am Ende eines Abschnitts, in fester Reihenfolge: Checkliste, Tests grün, **Handlauf** (wenn die Phase eine Oberfläche hat), Änderungsreview, Wartbarkeitsreview, **Retro**, Konfigurationsabgleich, Bericht.
+Am Ende eines Abschnitts hängt die Tiefe von der **Stufe** des Plans ab. Immer zuerst Checkliste und Tests grün. Bei Stufe S und M folgt der **Vorlauf** `gate-precheck.py` (`review-changes/scripts/`): Er führt die Verifikationsbefehle der Projektzeile aus, prüft den Trailer jedes Commits, Dateigrößen gegen die Grenze und Verweisziele geänderter Markdown-Dateien, und meldet in der letzten Zeile `thermo: yes` oder `thermo: no`. Mechanisches kostet so kein Modell, und jeder Mangel ist behoben, bevor ein Reviewer startet.
 
-Der **`handlauf`** kommt vor den Code-Gates, weil er eine Frage beantwortet, die kein Test und kein Review beantworten kann: Wie ist es, das zu benutzen? Er geht mit dem Browser durch die gebaute Fläche, sieht sich jede Seite und jeden Zustand wirklich an, klickt die Hauptwege und die Randfälle, beobachtet dabei Server-Log, Konsole und Netzwerk, und prüft nach dem Speichern nach, ob es wirklich gespeichert ist — ein Erfolgs-Toast ist kein Beleg. Die Specs sind dabei Orientierung, keine Checkliste: Eine Seite kann jede Anforderung erfüllen und trotzdem schief, langsam oder verwirrend sein, und genau das soll auffallen. Reiner Bericht, Befunde nach Schwere, keine Fixes — ein Lauf, der zwischendurch repariert, prüft am Ende einen Stand, den niemand gebaut hat.
+- **Stufe S und M:** nach dem Vorlauf laufen **Handlauf** (wenn die Phase eine Oberfläche hat, vom Nutzer in eigener Sitzung) und Änderungsreview **gleichzeitig**. Eine gemeinsame Fix-Runde nimmt beide Befundlisten, danach folgt genau ein Nachtrags-Lauf. Das Wartbarkeitsreview nur bei `thermo: yes` oder auf Wunsch. **Retro** und Konfigurationsabgleich nur bei Anlass (siehe Rückfluss).
+- **Stufe L:** die volle Reihenfolge: Handlauf, Änderungsreview, Wartbarkeitsreview, Retro, Konfigurationsabgleich, Bericht.
+
+Der **`handlauf`** ist ein eigenes Gate, weil er eine Frage beantwortet, die kein Test und kein Review beantworten kann: Wie ist es, das zu benutzen? Er geht mit dem Browser durch die gebaute Fläche, sieht sich jede Seite und jeden Zustand wirklich an, klickt die Hauptwege und die Randfälle, beobachtet dabei Server-Log, Konsole und Netzwerk, und prüft nach dem Speichern nach, ob es wirklich gespeichert ist - ein Erfolgs-Toast ist kein Beleg. Die Specs sind dabei Orientierung, keine Checkliste: Eine Seite kann jede Anforderung erfüllen und trotzdem schief, langsam oder verwirrend sein, und genau das soll auffallen. Reiner Bericht, Befunde nach Schwere, keine Fixes - ein Lauf, der zwischendurch repariert, prüft am Ende einen Stand, den niemand gebaut hat.
 
 **Er läuft in einer eigenen, frischen Sitzung und bekommt bewusst keinen Review-Input.** Keine Findings-Liste, kein Review-Bericht, kein Hinweis aus den Block-Reviews. Das sieht nach Verschwendung aus und ist das Gegenteil: Sein ganzer Wert liegt darin, der **erste** Blick zu sein. Wer gelesen hat, dass die Rechteprüfung im Handler in Ordnung ist, sucht die Rechteprüfung statt die Seite anzusehen; wer eine Liste mit neun Befunden mitbringt, bestätigt diese neun und übersieht den zehnten — die schiefe Spalte, die niemand notiert hat. Gelesen wird deshalb nur **Absicht**: Phasen-Plan, UI-Spec, Mockup, frühere Handlauf-Berichte. Ein Review ist dagegen schon ein Urteil, und genau das färbt ab. Die Befunde gehen an den Nutzer und in den Phasen-Plan, nicht in die Code-Gates.
 
@@ -306,9 +317,9 @@ Die Struktur-Linse liest dabei, was das Projekt an Urteilsregeln gesammelt hat (
 
 Zwei Regeln machen den Bericht belastbar. **Nachweis oder es zählt nicht:** zu jedem Finding der Pfad bis zum Schaden, der Gegenbeweis und ein Urteil. Und für die Spec-Linse die Nummer der verletzten Anforderung; ein Spec-Finding ohne Nummer ist eine Meinung. Dazu der **Gate-Abgleich** Punkt für Punkt, und ein Punkt, der ohne laufendes System nicht prüfbar ist, heißt „nicht prüfbar", nie „erfüllt".
 
-Das letzte Gate ist **`thermo-nuclear-code-quality-review`**, und es läuft über dieselben Änderungen wie das Änderungsreview. Es fragt nicht, ob der Code richtig ist, sondern ob er in sechs Monaten noch zu ändern ist. Sein Maßstab ist bewusst unbequem: Es sucht nicht nach lokalen Aufräumgelegenheiten, sondern nach dem Umbau, der ganze Verzweigungen, Schichten oder Sonderfälle **verschwinden** lässt, statt sie umzuverteilen. Feste Schwellen gehören dazu, etwa dass eine Datei durch eine Änderung nicht ohne starken Grund über tausend Zeilen wächst, und dass neue Sonderfall-Bedingungen in fremden Abläufen ein Entwurfsproblem sind, keine Stilfrage. Die Messlatte für ein „genehmigt" ist ausdrücklich **nicht**, dass es funktioniert.
+Das dritte Gate ist **`thermo-nuclear-code-quality-review`** (bei Stufe S und M nur bei `thermo: yes` oder auf Wunsch, bei Stufe L immer), und es läuft über dieselben Änderungen wie das Änderungsreview. Es fragt nicht, ob der Code richtig ist, sondern ob er in sechs Monaten noch zu ändern ist. Sein Maßstab ist bewusst unbequem: Es sucht nicht nach lokalen Aufräumgelegenheiten, sondern nach dem Umbau, der ganze Verzweigungen, Schichten oder Sonderfälle **verschwinden** lässt, statt sie umzuverteilen. Feste Schwellen gehören dazu, etwa dass eine Datei durch eine Änderung nicht ohne starken Grund über tausend Zeilen wächst, und dass neue Sonderfall-Bedingungen in fremden Abläufen ein Entwurfsproblem sind, keine Stilfrage. Die Messlatte für ein „genehmigt" ist ausdrücklich **nicht**, dass es funktioniert.
 
-Damit sind es **drei getrennte** Gates, und das ist der Punkt. Der Handlauf fragt, ob es sich gut benutzen lässt, das Änderungsreview, ob der Code richtig ist, die Qualitätsprüfung, ob er wartbar bleibt. Drei Fragen, drei Köpfe, kein gemeinsamer Kontext.
+Damit sind es **drei getrennte** Gates, auch wo zwei gleichzeitig laufen, und das ist der Punkt. Der Handlauf fragt, ob es sich gut benutzen lässt, das Änderungsreview, ob der Code richtig ist, die Qualitätsprüfung, ob er wartbar bleibt. Drei Fragen, drei Köpfe, kein gemeinsamer Kontext.
 
 Die beiden Code-Reviews sind untereinander ebenfalls **getrennt**, aus demselben Grund. „Richtig" und „wartbar" sind verschiedene Fragen; ein Lauf, der beide beantworten soll, beantwortet keine gründlich. Getrennte Gates halten die zweite Frage außerdem davon ab, gegen die erste wegpriorisiert zu werden — sie verliert sonst immer, weil ein Sicherheitsbefund dringender aussieht als eine wuchernde Datei.
 
@@ -322,7 +333,7 @@ Der Rückfluss hat drei Empfänger. Gebaut wurde etwas, das alle betrifft: die S
 
 **In die Specs.** Was gebaut wurde, wird nachgezogen. Das Review liefert die Liste dafür selbst: Es findet regelmäßig Stellen, an denen **die Spec** das Problem ist und nicht der Code, und sammelt sie in einem eigenen Abschnitt „Spec-Rückfluss". Ohne den gehen diese Funde verloren, weil der Bericht sonst nur Code bewertet. Nachgezogen wird über `write-spec`, nicht im Review selbst.
 
-**In die Umgebung.** Das ist die Stelle, an der aus einem Fehler eine Regel wird. Ohne sie wiederholt sich derselbe Fehler, bis jemand ihn zufällig erinnert. `retro` liest die Sitzung und die Berichte der Gates und fragt nicht, was falsch war, sondern was in der Umgebung es zugelassen hat. Es schlägt nur vor; geändert wird, was der Nutzer auswählt.
+**In die Umgebung.** Das ist die Stelle, an der aus einem Fehler eine Regel wird. Ohne sie wiederholt sich derselbe Fehler, bis jemand ihn zufällig erinnert. `retro` läuft, wenn die Fix-Quote über 0,3 liegt, ein Befund der oberen zwei Schweregrade auftrat oder der Nutzer es will; eine kleine Phase ohne das braucht es nicht. Es liest die Sitzung und die Berichte der Gates und fragt nicht, was falsch war, sondern was in der Umgebung es zugelassen hat. Dazu messen zwei Skripte: `session-cost.py` liefert Minuten, Tokens und die Fix-Quote je Rolle, `context-usage.py --pack <Manifest>` die **Nachlade-Quote**, also welche Abschnitte Subagenten außerhalb ihres Pakets lasen und welche Paketabschnitte ohne Spur von Nutzung blieben. Es schlägt nur vor; geändert wird, was der Nutzer auswählt.
 
 Jeder Kandidat wird zuerst eingeordnet, und davon hängt ab, wohin er geht:
 
@@ -346,7 +357,7 @@ Geprüft wird jede Aussage gegen **ihre eigene** Autorität, nicht alles gegen e
 | Produkt: Zielgruppe, Umfang, bewusste Nicht-Ziele | **Die Produktdefinition** |
 | Verweis nach außen: Pfad in der Wissensbasis, Werkzeugname, verlinkte Datei | **Das Verwiesene selbst.** Nachsehen, ob es existiert |
 
-Die Prüffrage, wenn unklar ist, welche Autorität greift: *Könnte ich das durch Hinschauen widerlegen?* Wenn ja, wird hingeschaut.
+Der prüfbare Teil läuft mechanisch: `ref-check.py` meldet jeden Pfad in Backticks einer Anweisungsdatei, der nicht existiert. Die Prüffrage, wenn unklar ist, welche Autorität greift: *Könnte ich das durch Hinschauen widerlegen?* Wenn ja, wird hingeschaut.
 
 Die vierte Zeile ist die, die am leichtesten vergessen wird, und sie ist teuer. Ein Verweis auf eine Notiz in der Wissensbasis, auf ein Werkzeug eines MCP-Servers oder auf eine andere Regeldatei wird beim Schreiben nicht geprüft und altert danach still. Er fällt auch nicht auf, wenn er bricht: die Sitzung sucht, findet nichts, und arbeitet mit weniger weiter, als sie hätte haben können. Wer nur Code, Entscheidungen und Produkt prüft, findet diese Klasse nie, weil sie in keine der drei fällt.
 
@@ -354,7 +365,7 @@ Bei Werkzeugnamen kommt eine Fußangel dazu: es zählt nur, was der **laufende**
 
 **Wann der Lauf fällig ist**, nach derselben Regel wie bei `spec-consistency`: bei einer Änderung an dem, wovon die Konfiguration abhängt, nicht nach einem Takt.
 
-- **Am Phasenende**, nach den Reviews und nach `retro`, vor der Freigabe. Der Hauptfall: eine Phase ändert Code, und Code ist die Autorität für die größte Klasse von Behauptungen. Nach den Reviews, weil die noch Code ändern; nach `retro`, weil das die Umgebung ändert und `CODING_STANDARDS.md` und `.claude/checks.json` genauso Konfiguration sind; vor der Freigabe, damit die Drift in demselben Bericht steht, über den entschieden wird.
+- **Am Phasenende**, wenn `ref-check.py` (`config-sync/scripts/`) einen fehlenden Pfad in Backticks meldet oder sich eine Entscheidung änderte; sonst entfällt der Lauf. Nach den Reviews und nach `retro`, vor der Freigabe. Der Hauptfall: eine Phase ändert Code, und Code ist die Autorität für die größte Klasse von Behauptungen. Nach den Reviews, weil die noch Code ändern; nach `retro`, weil das die Umgebung ändert und `CODING_STANDARDS.md` und `.claude/checks.json` genauso Konfiguration sind; vor der Freigabe, damit die Drift in demselben Bericht steht, über den entschieden wird.
 - **Bei einer geänderten Entscheidung**, gezielt über die Dateien, die sie zitieren. Billig und ergiebig, wie bei den Specs.
 - **Wenn ein Verweisziel umzieht.** Wissensbasis umstrukturiert, Regeldatei umbenannt, MCP-Server getauscht. Hängt an keiner Phase und wird von keinem Bauschritt ausgelöst.
 
@@ -484,7 +495,10 @@ Ehrlich, weil ein Kreislauf mit Lücke kein Kreislauf ist.
 | Übergabe + Hooks | `.claude/state.md`; Hook injiziert Fahrplan und Übergabe | vorhanden |
 | `session-recap` + Hook | Handoff am Sitzungsende, Abschiedsformeln als Auslöser | vorhanden |
 | `planning` | Plan je Phase, im Planungsmodus, vor dem Branch, mit Blöcken und Wellen | vorhanden |
-| `execute-plan` | Plan abarbeiten, Block je Worktree, bis zu drei parallel, ein Review je Block | vorhanden |
+| `execute-plan` | Plan abarbeiten, Block je Worktree, bis zu drei parallel, ein Review je Block, Paket je Block, Budgets | vorhanden |
+| `context-pack.py` | Paket und Manifest je Block, nie abgeschnitten, Exit 3 bei zu großem Paket | vorhanden |
+| `gate-precheck.py` | Mechanischer Vorlauf des Phasen-Gates: Befehle, Trailer, Dateigrößen, Verweisziele, `thermo: yes\|no` | vorhanden |
+| `ref-check.py` | Pfade in Backticks der Anweisungsdateien auf Existenz prüfen, erster Schritt von `config-sync` | vorhanden |
 | `testing` | Testdisziplin, Verify Red, Pflichtfälle aus dem Projekt abgeleitet | vorhanden |
 | `handlauf` | Fläche im Browser durchgehen, eigene Sitzung ohne Review-Input, reiner Bericht | vorhanden |
 | `review-changes` | Code-Gate am Phasenende, drei Linsen, Gate-Abgleich, reiner Bericht | vorhanden |
