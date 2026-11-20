@@ -1,0 +1,114 @@
+"""Tests fuer session-state.py: bestehendes Verhalten und Laufzustand-Kurzfassung."""
+
+import importlib.util
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SCRIPT = os.path.join(HERE, "session-state.py")
+spec = importlib.util.spec_from_file_location("session_state", SCRIPT)
+session_state = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(session_state)
+
+RUN_STATE = (
+    "Phasen-Branch: phase/x\nPlan: p.md\nRegelbuendel: r.md\n\n"
+    "| Block | Status | Statuscode | Fix-Runden | Worktree |\n"
+    "|---|---|---|---|---|\n"
+    "| b1 | laufend | - | 0 | w1 |\n"
+    "| b2 | gemerged | DONE | 0 | w2 |\n"
+)
+
+
+class Base(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.project = os.path.join(self.tmp.name, "projekt-a")
+        os.makedirs(os.path.join(self.project, ".claude"))
+
+    def write(self, rel, text):
+        path = os.path.join(self.project, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(text)
+
+    def run_hook(self):
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("PROJECT_ROADMAP", "PROJECT_STATE")}
+        env["CLAUDE_PROJECT_DIR"] = self.project
+        proc = subprocess.run([sys.executable, "-I", SCRIPT], input="{}",
+                              capture_output=True, text=True, env=env)
+        self.assertEqual(proc.returncode, 0)
+        return proc.stdout
+
+    def context(self):
+        out = self.run_hook()
+        return json.loads(out)["hookSpecificOutput"]["additionalContext"] if out else ""
+
+
+class TestExisting(Base):
+    def test_nothing_gives_empty_output(self):
+        self.assertEqual(self.run_hook(), "")
+
+    def test_handoff_only(self):
+        self.write(".claude/state.md", "Uebergabe-Text")
+        ctx = self.context()
+        self.assertTrue(ctx.startswith("LETZTE SITZUNG (aus .claude/state.md)\nUebergabe-Text"))
+        self.assertIn("Kein Fahrplan gefunden.", ctx)
+
+    def test_roadmap_and_handoff(self):
+        self.write("roadmap.md", "# Fahrplan\nPosition")
+        self.write(".claude/state.md", "Uebergabe-Text")
+        ctx = self.context()
+        self.assertTrue(ctx.startswith("FAHRPLAN (wo steht das Projekt, was kommt als Naechstes)\n# Fahrplan"))
+        self.assertIn("LETZTE SITZUNG", ctx)
+        self.assertIn("Beginne die Sitzung damit", ctx)
+
+    def test_event_name(self):
+        self.write(".claude/state.md", "x")
+        out = json.loads(self.run_hook())
+        self.assertEqual(out["hookSpecificOutput"]["hookEventName"], "SessionStart")
+
+
+class TestRunSummary(Base):
+    def test_function_none_without_state(self):
+        self.assertIsNone(session_state.run_summary(self.project))
+
+    def test_function_content(self):
+        self.write(".claude/run/phase-2.md", RUN_STATE)
+        text = session_state.run_summary(self.project)
+        self.assertIn("phase/x", text)
+        self.assertIn("b1: laufend", text)
+        self.assertIn("b2: gemerged", text)
+        self.assertIn("Weitermachen mit execute-plan Schritt 0", text)
+
+    def test_appended_to_context(self):
+        self.write(".claude/state.md", "Uebergabe-Text")
+        before = self.run_hook()
+        self.write(".claude/run/phase-2.md", RUN_STATE)
+        ctx = self.context()
+        base = json.loads(before)["hookSpecificOutput"]["additionalContext"]
+        self.assertTrue(ctx.startswith(base))
+        self.assertIn("Weitermachen mit execute-plan Schritt 0", ctx[len(base):])
+
+    def test_unchanged_without_state(self):
+        self.write(".claude/state.md", "Uebergabe-Text")
+        os.makedirs(os.path.join(self.project, ".claude", "run"))
+        self.write(".claude/run/auslauf-s1", "kontext")
+        self.assertNotIn("execute-plan", self.context())
+
+    def test_newest_state_wins(self):
+        self.write(".claude/run/alt.md", RUN_STATE.replace("phase/x", "phase/alt"))
+        os.utime(os.path.join(self.project, ".claude/run/alt.md"), (1, 1))
+        self.write(".claude/run/neu.md", RUN_STATE.replace("phase/x", "phase/neu"))
+        text = session_state.run_summary(self.project)
+        self.assertIn("phase/neu", text)
+        self.assertNotIn("phase/alt", text)
+
+
+if __name__ == "__main__":
+    unittest.main()

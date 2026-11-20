@@ -42,6 +42,8 @@ Der Ausgangspunkt ist eine Beobachtung. Ein Agent, der bei jeder Sitzung bei nul
 
 Zwei Dateien tragen über Sitzungsgrenzen. Der **Fahrplan** `roadmap.md` in der Wissensbasis beantwortet, wo das Projekt steht und was als Nächstes kommt; er wird gleich zu Beginn aus der mitgelieferten Vorlage kopiert, bereits mit dem Ablauf ausgefüllt, je Schritt samt seiner Voraussetzung und der Regel, dass ein Skill nicht läuft, solange die noch offen ist. Später wächst er um die Bauphasen, die `plan-build` aus den fertigen Specs ableitet. Ab dann ist er zu groß für jede Sitzung, deshalb injiziert der Hook nur noch den Kopf und den Abschnitt, auf den die Zeile `Aktuelle Bauphase` zeigt. `.claude/state.md` im Repo trägt die Übergabe der letzten Sitzung. Dazu drei Hooks, die `project-init` mit installiert: `session-state.py` injiziert Fahrplan und Übergabe bei Sitzungsstart und lässt die Sitzung mit dem nächsten Schritt eröffnen, `session-recap-trigger.py` erzwingt sie bei Abschiedsformeln, und `post-edit-check.py` führt nach jedem Edit die schnellen Checks aus `.claude/checks.json` aus.
 
+**Auslauf.** Der Hook `auslauf.py` misst bei jedem Prompt und nach jedem Werkzeugaufruf, wie voll das Kontextfenster ist. Über der Schwelle `kontext` (Standard 0,6 des Fensters `fenster`) legt er eine Marke in `.claude/run/` an und weist an, nichts Neues zu starten, laufende Blöcke zu beenden, den Laufzustand zu aktualisieren und `session-recap` auszuführen. Über `notbremse` (0,8) ist die Anweisung härter. Neue Subagenten ohne laufende Block-ID werden dann verweigert. Die neue Sitzung macht mit `execute-plan` Schritt 0 am Laufzustand weiter. Werte stehen in `.claude/auslauf.json`.
+
 Was aus Fehlern gelernt wird, landet nicht in der immer geladenen `CLAUDE.md`. `retro` macht aus Mechanischem einen Check und aus Urteilsfragen eine Regel in `CODING_STANDARDS.md`, die nur die Reviewer lesen. Die Fachsprache steht im Glossar `GLOSSARY.md` im Vault, das jedes Interview mitpflegt.
 
 Der Kreislauf ist geschlossen: von der Idee über die Specs und die Bauphasen zurück in Specs, Umgebung und Konfiguration, die dabei gegen den gebauten Code korrigiert werden. Daneben gibt es zwei Einstiege ohne Voraussetzung: `diagnosing-bugs`, wenn etwas kaputt ist, und `improve-codebase-architecture` zur Pflege. Was noch fehlt, sagt die Tabelle am Ende von [LOOP.md](LOOP.md).
@@ -73,6 +75,14 @@ Copy-Item -Recurse -Force agent-sdlc\skills\* $HOME\.claude\skills\
 Damit gilt es in jedem Projekt. Soll es nur für eines gelten, geht es nach `.claude/skills/` in dessen Ordner statt nach `~/.claude/skills/`, dann aber vollständig und nicht zusätzlich zur globalen Installation.
 
 **Keine Projektkopien einzelner Skills.** Ein Ordner unter `.claude/skills/` mit dem Namen eines globalen Skills überdeckt ihn, und Updates kommen dort nicht mehr an. Was ein Skill über ein Projekt wissen muss, steht als Zeile im Abschnitt `## Project references` der Wurzel-`CLAUDE.md`; wie das funktioniert, steht in [LOOP.md](LOOP.md).
+
+**Rollen für `execute-plan`:** Die Agentendefinitionen in `agents/` (`block-implementer`, `block-reviewer`, `block-fixer`, `gate-reviewer`) gehören nach `~/.claude/agents/`:
+
+```bash
+mkdir -p ~/.claude/agents && cp agent-sdlc/agents/*.md ~/.claude/agents/
+```
+
+Neue Dateien sieht Claude Code erst nach einem Neustart der Sitzung. Fehlt eine Rolle, fällt `execute-plan` auf `general-purpose` mit ausdrücklichem Modell zurück.
 
 **Prüfen:** In Claude Code `/project-init` tippen. Erscheint der Skill nicht, Sitzung neu starten.
 

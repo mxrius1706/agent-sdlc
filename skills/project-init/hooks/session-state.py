@@ -167,6 +167,40 @@ def state_path(project_dir):
     return os.path.join(project_dir, ".claude", "state.md")
 
 
+def run_summary(project_dir):
+    """Kurzfassung des neuesten Laufzustands in .claude/run/*.md, sonst None."""
+    run_dir = os.path.join(project_dir, ".claude", "run")
+    try:
+        names = [n for n in os.listdir(run_dir) if n.endswith(".md")]
+        newest = max(names, key=lambda n: os.path.getmtime(os.path.join(run_dir, n)))
+    except (OSError, ValueError):
+        return None
+    content = read_file(os.path.join(run_dir, newest))
+    if not content:
+        return None
+
+    branch = re.search(r"^Phasen-Branch:\s*(.+?)\s*$", content, re.MULTILINE)
+    blocks = []
+    in_table = False
+    for line in content.splitlines():
+        if not line.strip().startswith("|"):
+            in_table = False
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells[:2] == ["Block", "Status"]:
+            in_table = True
+        elif in_table and len(cells) >= 2 and not set(cells[0]) <= set("-: "):
+            blocks.append(cells[0] + ": " + cells[1])
+
+    lines = ["LAUFZUSTAND (aus .claude/run/" + newest + ")"]
+    if branch:
+        lines.append("Phasen-Branch: " + branch.group(1))
+    if blocks:
+        lines.append("Bloecke: " + "; ".join(blocks))
+    lines.append("Weitermachen mit execute-plan Schritt 0")
+    return "\n".join(lines)
+
+
 def main() -> None:
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR", ".")
 
@@ -177,7 +211,8 @@ def main() -> None:
     if handoff:
         handoff = clip(handoff, MAX_HANDOFF_CHARS, handoff_path)
 
-    if not roadmap and not handoff:
+    summary = run_summary(project_dir)
+    if not roadmap and not handoff and not summary:
         return
 
     parts = []
@@ -202,6 +237,9 @@ def main() -> None:
             "Kein Fahrplan gefunden. Falls das Projekt einen hat, liegt sein Pfad "
             "nicht in .claude/roadmap-path; sonst ist er noch nicht angelegt."
         )
+
+    if summary:
+        parts.append(summary)
 
     print(json.dumps({
         "hookSpecificOutput": {

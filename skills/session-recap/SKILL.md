@@ -49,6 +49,10 @@ Write it in the project's documentation language. The headings are an example, n
 
 The end of a session is when the roadmap is most likely stale, because a step may have been completed by hand rather than through the skill that would have recorded it. Read it, compare it with what actually happened, and correct it. If the session completed a step, the roadmap says so before the handoff is written; a drifted roadmap is worse than none, because the next session believes it.
 
+## Auslauf
+
+`execute-plan` calls this skill when the mark `.claude/run/auslauf-<session_id>` exists: the context is nearly full, and the work goes on in a new session. Besides the handoff, bring the run state `.claude/run/<phase>.md` up to date (every block with its true status). Put in "Nächstes": resume `execute-plan` at step 0. Then tell the user in the chat to start a new session.
+
 ## Afterwards
 
 Give the user two or three lines in the chat saying what was written. They are ending the session, not starting a review.

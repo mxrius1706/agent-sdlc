@@ -15,9 +15,17 @@ Work a released plan, wave by wave, block by block, each block in its own worktr
 
 This skill owns the model choice.
 
-**Every subagent this skill starts runs on `model: "sonnet"`**: implementers, block reviewers, fixers. Set it explicitly on every `Agent` call so no subagent inherits the coordinator's model. A stronger model for one block (delicate integrity-critical or schema logic, or a block that failed twice on the cheaper model) only after asking the user in the chat.
+**Every block subagent this skill starts runs on `model: "sonnet"`**: implementers, block reviewers, fixers. The roles `block-implementer`, `block-reviewer` and `block-fixer` carry it in their definition; a `general-purpose` fallback gets it explicitly on the `Agent` call, so no subagent inherits the coordinator's model. A stronger model for one block (delicate integrity-critical or schema logic, or a block that failed twice on the cheaper model) only after asking the user in the chat.
 
-**The phase gate is the exception:** `review-changes` and `thermo-nuclear-code-quality-review` run on the **strong model** (`model: "opus"`). They are the net under the cheaper block review; a net on the cheap model defeats the trade.
+**The phase gate is the exception:** the role `gate-reviewer` (fallback `general-purpose` with `model: "opus"`), `review-changes` and `thermo-nuclear-code-quality-review` run on the **strong model**. They are the net under the cheaper block review; a net on the cheap model defeats the trade.
+
+## Roles
+
+Dispatch by name: `block-implementer` (step 4), `block-reviewer` and `block-fixer` (step 5), `gate-reviewer` (step 7). A role starts without the project's `CLAUDE.md`; the rules bundle carries everything binding.
+
+**Never add the `Skill` tool to a role.** It brings the whole skill catalog back into the role's context (measured: about 11,000 tokens more at start).
+
+**A role that is not installed** (new agent files appear after a session restart) falls back to `general-purpose` with an explicit `model` and the same bundle in the prompt. Say once in the chat which role fell back.
 
 `handlauf` is not dispatched from here at all (step 7).
 
@@ -30,6 +38,28 @@ This skill owns the model choice.
   The separator is a hyphen, not a slash: once `refs/heads/phase-7a/fundament` exists as a file, `refs/heads/phase-7a/fundament/b2-...` would need it as a directory, and git refuses. Listing still works: `git branch --list '<phase-branch>-*'`.
 
 Ask git for the repository root (`git rev-parse --show-toplevel`); it is not always the project directory. Worktrees are created from the root, while build commands usually run a level deeper. Every path handed to a subagent is absolute and points into its worktree.
+
+## Step 0: Read the run state
+
+The run state is the file `.claude/run/<phase>.md` in the project. Look for it first.
+
+- **Found:** read it, then compare with `git worktree list` and `git branch --list '<phase-branch>-*'`. Git wins over the file where they differ; correct the file. Resume at the known point: `laufend` with a worktree and commits goes on in that worktree, `review` and `fix` go to step 5, `gemerged` is done. Start no block twice.
+- **Not found:** create it in step 2.
+
+**Format:**
+
+```markdown
+Phasen-Branch: <name>
+Plan: <path>
+Regelbuendel: <path>
+
+| Block | Status | Statuscode | Fix-Runden | Worktree |
+|---|---|---|---|---|
+```
+
+Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact.
+
+**Write the run state after every transition:** dispatch, status code received, review answer, fix round, merge, block blocked.
 
 ## Step 1: Read the plan, extract blocks and waves
 
@@ -45,16 +75,17 @@ Put the blocks in a todo list, grouped by wave.
 
 ## Step 2: Write the rules bundle, once per phase
 
-One file in the scratchpad, `rules-bundle-<phase>.md`, written before the first dispatch and reused by every subagent of the phase:
+One file, `.claude/run/rules-bundle-<phase>.md`, written before the first dispatch and reused by every subagent of the phase. It lives next to the run state, so a new session finds both:
 
 - The binding rules from the root CLAUDE.md sections `Architecture rules`, `Security baseline`, `Testing requirements` and `Definition of done`, or their counterparts in the project's language.
 - The path rules that will match in this phase: every file in `.claude/rules/` whose `paths:` frontmatter hits one of the plan's critical files, **content copied in**, not named.
 - The **glossary terms** relevant to the phase's areas (from `GLOSSARY.md` in the knowledge base, reached through the knowledge base map in the root instructions), **content copied in**, including each term's `_Avoid_` aliases. A path in a prompt is a request; the terms themselves are simply there.
+- The sections `## Für Subagenten` of the global and the project instruction files, **copied verbatim**.
 - The verification commands and what green means.
 - The **commit trailer**, verbatim: the one the root instructions name, else the one on the latest commits of the main branch. Every subagent ends every commit with exactly this trailer; it takes precedence over any attribution line the harness suggests.
 - The worktree contract (step 4).
 
-Subagents read the bundle and the plan file themselves; the coordinator passes paths, block id and task ids.
+Subagents read the bundle and the plan file themselves; the coordinator passes paths, block id and task ids. Record the bundle path in the run state header.
 
 ## Step 3: Open the worktree
 
@@ -72,7 +103,7 @@ Before opening the third worktree, check free memory. Three implementers plus th
 
 ## Step 4: Dispatch the implementer
 
-**Up to three blocks at a time** with disjoint files, each with one fresh subagent (`model: "sonnet"`), dispatched in the background so the coordinator can merge finished blocks while others run.
+**Up to three blocks at a time** with disjoint files, each with one fresh `block-implementer`, dispatched in the background so the coordinator can merge finished blocks while others run.
 
 The prompt is short, because the bundle carries the rules:
 
@@ -103,7 +134,7 @@ After a block, change an input before re-dispatching; repeating unchanged is a l
 
 ## Step 5: One combined review per block
 
-A fresh reviewer (`model: "sonnet"`) reads the block's diff (`git diff <phase-branch>...HEAD` in the worktree), the plan's text for the block's tasks, the rules bundle and, if the repo has one, `CODING_STANDARDS.md` (judgement rules that only reviewers read; implementers never get it). Names in the diff are checked against the glossary terms in the bundle. It answers two questions in one pass, in this order:
+A fresh `block-reviewer` reads the block's diff (`git diff <phase-branch>...HEAD` in the worktree), the plan's text for the block's tasks, the rules bundle and, if the repo has one, `CODING_STANDARDS.md` (judgement rules that only reviewers read; implementers never get it). Names in the diff are checked against the glossary terms in the bundle. It answers two questions in one pass, in this order:
 
 1. **Spec:** Is every task of the block implemented as the plan says? Is anything built the plan did **not** ask for? Do paths, names, types, constraints match? Is the written thing visible where the plan promises it?
 2. **Quality:** the project's checklist from the bundle, security invariants by name from the root section `Security baseline` or its counterpart in the project's language (authentication, authorisation, CSRF, rate limit, validation, audit trail, integrity chains, no hardcoded secrets), tests for new logic including failure cases.
@@ -112,11 +143,11 @@ Severity in four steps: exploitable or data-destroying; breaks a binding project
 
 Answer: `APPROVED` with collected findings, or `CHANGES_REQUIRED` with the blocking list (file:line, rule, fix).
 
-**Blocking findings:** a fresh fixer (`model: "sonnet"`) in the same worktree, one fix commit, then the reviewer checks **only the fix diff and the findings**: each finding fixed as the reviewer wrote it, and its test shown red on the unfixed code for the finding's reason. Two rounds without green: go to the user.
+**Blocking findings:** a fresh `block-fixer` in the same worktree, one fix commit, then the reviewer checks **only the fix diff and the findings**: each finding fixed as the reviewer wrote it, and its test shown red on the unfixed code for the finding's reason. Two rounds without green: go to the user.
 
 ### Fix briefs
 
-Every fixer, whether for a block finding, a red wave or a phase gate finding, gets the finding **verbatim** as its reviewer wrote it: location, damage path, violated rule. A shortened finding gets the shortened version fixed, and its test then proves the brief instead of the finding; every later gate round finds the remainder.
+Every `block-fixer`, whether for a block finding, a red wave or a phase gate finding, gets the finding **verbatim** as its reviewer wrote it: location, damage path, violated rule. A shortened finding gets the shortened version fixed, and its test then proves the brief instead of the finding; every later gate round finds the remainder.
 
 The fix starts with a test that reproduces the finding, run once against the unfixed code and **red** for the finding's reason. The fixer's answer quotes that red run (command and failing assertion); without it the fix is not done.
 
@@ -136,16 +167,21 @@ In the order blocks finish.
 
 ## Step 7: Close the plan
 
-All waves merged and green: hand over to the phase gate, which runs per the ritual in `plan-build` (gate checklist, full suite, `handlauf` where there is an interface, `review-changes`, `thermo-nuclear-code-quality-review`, report). The reviews keep their full depth on the strong model.
+All waves merged and green: hand over to the phase gate, which runs per the ritual in `plan-build` (gate checklist, full suite, `handlauf` where there is an interface, `review-changes`, `thermo-nuclear-code-quality-review`, report). The reviews keep their full depth on the strong model. The whole-phase review is dispatched as `gate-reviewer`.
 
 Write the collected block-review findings into the plan file under `## Block-Befunde` (block id, severity, finding, one line each); they outlive this session there. `review-changes` gets them as input, and `retro` reads them from the plan file as one of its primary sources. `handlauf` gets none of them and is not started from this session; hand the user the branch and the surfaces to walk, and let them start it.
 
 Check that `.worktrees/` is empty and `git worktree list` shows only the main checkout.
 
+## Auslauf
+
+When the mark `.claude/run/auslauf-<session_id>` exists, the context is nearly full and a hook enforces it. Start no new block and no new wave. Bring the running blocks to their end step: merge when their review is green, otherwise leave them in their status. Then update the run state and run `session-recap`; the next session resumes at step 0.
+
 ## Coordinator guardrails
 
 - Subagents write the implementation; the coordinator does not.
-- Every subagent carries `model: "sonnet"`; going up a model waits for the user.
+- Every block subagent runs on `sonnet`; going up a model waits for the user.
+- The run state is current after every transition.
 - A released plan keeps its blocks unless the user agrees to a new cut.
 - Three blocks at most, with disjoint files.
 - Only worktrees are edited; the main checkout stays untouched.
