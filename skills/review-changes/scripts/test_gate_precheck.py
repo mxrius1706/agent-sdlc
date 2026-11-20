@@ -68,5 +68,24 @@ class LinkExtractUnitTest(unittest.TestCase):
         self.assertEqual(gp.extract_links(text), [(1, "x.md"), (7, "z.md")])
 
 
+class ReportUnitTest(unittest.TestCase):
+    def test_format_line_keeps_first_detail_line_on_one_row(self):
+        gp = load()
+        rows = gp.format_lines([("FAIL", "cmd `x`", "Exit 1\nzeile a\nzeile b")])
+        self.assertEqual(rows[0], "FAIL cmd `x`: Exit 1")
+        self.assertEqual(rows[1:], ["    zeile a", "    zeile b"])
+
+    def test_thermo_line(self):
+        gp = load()
+        self.assertEqual(gp.thermo_line([("PASS", "groesse", "ok")]), "thermo: no")
+        yes = gp.thermo_line([("FAIL", "groesse", "a.py hat 9 Zeilen")])
+        self.assertTrue(yes.startswith("thermo: yes (") and yes.endswith(")"))
+
+    def test_exit_code(self):
+        gp = load()
+        self.assertEqual(gp.exit_code([("PASS", "a", "b")]), 0)
+        self.assertEqual(gp.exit_code([("PASS", "a", "b"), ("FAIL", "c", "d")]), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

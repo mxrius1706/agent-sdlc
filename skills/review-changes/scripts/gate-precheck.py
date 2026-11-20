@@ -8,10 +8,13 @@ Aufruf:
 Prueft ohne Modell: Befehle (--cmd, ohne Shell), Trailer je Commit,
 Dateigroesse, relative Markdown-Links. Nur Standardbibliothek.
 """
+import argparse
+import os
 import posixpath
 import re
 import shlex
 import subprocess
+import sys
 
 TAIL_LINES = 15
 
@@ -174,3 +177,79 @@ def check_links(base, head, root):
     if not results:
         return [("PASS", "links", "%d geaenderte Markdown-Dateien ohne kaputte Links" % checked)]
     return results
+
+
+class ArgError(Exception):
+    """Falsche Eingabe auf der Kommandozeile."""
+
+
+class QuietParser(argparse.ArgumentParser):
+    def error(self, message):
+        raise ArgError("Falscher Aufruf: %s." % message)
+
+
+def build_parser():
+    p = QuietParser(prog="gate-precheck.py", add_help=False)
+    p.add_argument("--base", required=True)
+    p.add_argument("--head", default="HEAD")
+    p.add_argument("--root", default=".")
+    p.add_argument("--cmd", action="append", default=[])
+    p.add_argument("--trailer", default=None)
+    p.add_argument("--size-limit", type=int, default=1000)
+    return p
+
+
+def format_lines(results):
+    """Berichtzeilen `PASS|FAIL <check>: <detail>`, weitere Detailzeilen eingerueckt."""
+    rows = []
+    for status, check, detail in results:
+        first, *rest = detail.split("\n")
+        rows.append("%s %s: %s" % (status, check, first))
+        rows.extend("    " + r for r in rest)
+    return rows
+
+
+def thermo_line(results):
+    """`thermo: yes (<grund>)` bei einer Groessen-Ueberschreitung, sonst `thermo: no`."""
+    crossed = [d.split(" ")[0] for s, c, d in results if s == "FAIL" and c == "groesse"]
+    if crossed:
+        return "thermo: yes (Datei ueber der Groessengrenze: %s)" % ", ".join(crossed)
+    return "thermo: no"
+
+
+def exit_code(results):
+    return 1 if any(r[0] == "FAIL" for r in results) else 0
+
+
+def ref_ok(ref, root):
+    code, _ = git(root, "rev-parse", "--verify", "--quiet", ref + "^{commit}")
+    return code == 0
+
+
+def main(argv):
+    try:
+        args = build_parser().parse_args(argv)
+    except ArgError as exc:
+        print(exc, file=sys.stderr)
+        return 2
+    if not os.path.isdir(args.root):
+        print("Das Root-Verzeichnis %s existiert nicht." % args.root, file=sys.stderr)
+        return 2
+    for ref in (args.base, args.head):
+        if not ref_ok(ref, args.root):
+            print("Die Referenz %s ist in %s nicht bekannt." % (ref, args.root),
+                  file=sys.stderr)
+            return 2
+    results = []
+    results += run_checks(args.cmd, args.root)
+    results += check_trailer(args.base, args.head, args.trailer, args.root)
+    results += check_sizes(args.base, args.head, args.size_limit, args.root)
+    results += check_links(args.base, args.head, args.root)
+    for row in format_lines(results):
+        print(row)
+    print(thermo_line(results))
+    return exit_code(results)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
