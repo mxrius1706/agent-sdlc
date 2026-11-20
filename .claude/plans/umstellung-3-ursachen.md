@@ -1,6 +1,6 @@
 # Plan: Phase 3 Ursachen-Hebel
 
-Rahmenplan: `umstellung-kosten.md`. Planungstiefe **Standard** (Skripte plus mehrere Skill-Texte, kein Schema, kein Sicherheitsbezug). Branch `umstellung/3-ursachen`, Status 🔄 (freigegeben, im Bau).
+Rahmenplan: `umstellung-kosten.md`. Planungstiefe **Standard** (Skripte plus mehrere Skill-Texte, kein Schema, kein Sicherheitsbezug). Branch `umstellung/3-ursachen`, Status ✅ (gebaut, Gate 3 bis auf drei Punkte, die im Einsatz mitlaufen).
 
 ## Kontext und Ziel
 
@@ -90,13 +90,13 @@ Rolle und Skill-Texte: keine Unit-Tests, Gate 3.
 
 ## Gate 3
 
-- [ ] Alle Tests grün (Hooks, Messskripte, `plan-check`)
-- [ ] `lint` findet in einem synthetischen Plan mit sechs eingebauten Fehlern alle sechs
-- [ ] `stage` und `depth` sind deterministisch und haben Tests an jeder Schwelle
-- [ ] Die Pläne der Phasen 1 und 2 (freie Form) werden mit klarer Meldung (Exit 2) abgewiesen, nicht mit einem Absturz
+- [x] Alle Tests grün (Hooks, Messskripte, `plan-check`)
+- [x] `lint` findet in einem synthetischen Plan mit sechs eingebauten Fehlern alle sechs
+- [x] `stage` und `depth` sind deterministisch und haben Tests an jeder Schwelle
+- [x] Die Pläne der Phasen 1 und 2 (freie Form) werden mit klarer Meldung (Exit 2) abgewiesen, nicht mit einem Absturz
 - [ ] `acceptance-writer` im Probelauf an einem kleinen Block: roter Lauf zitiert, nur Testdateien im Commit, Startlast höchstens 8.000 Tokens
 - [ ] Phase 4 wird nach dem neuen Format geplant und mit `lint` geprüft (Probe am echten Einsatz)
-- [ ] `grep`: keine Projektnamen, Pfade oder Geviertstriche
+- [x] `grep`: keine Projektnamen, Pfade oder Geviertstriche
 - [ ] Läuft im Pilot mit: eine echte Phase im neuen Ablauf, Fix-Quote unter dem Basiswert
 
 ## Prüfung während des Baus
@@ -112,3 +112,11 @@ Kontextpaket-Builder und `gate-precheck.py` (Phase 4), parallele Gates, Budgets,
 - Plan-Lint gegen freie Pläne: Wer Tabellen weglässt, bekommt Exit 2, keinen stillen Durchlauf. Das ist gewollt.
 - `acceptance-writer` kann Tests schreiben, die zu eng am erwarteten Code kleben. Der Block-Review prüft sie gegen die Spec, der Probelauf prüft den Anfang.
 - Zusätzlicher Auftrag je Block ab Stufe M kostet Zeit. Der Pilot misst, ob die gesparten Fix-Runden ihn tragen, sonst wird er zur Option.
+
+## Ergebnis Gate 3 (Stand nach dem Bau)
+
+- 64 Tests für `plan-check.py`, dazu Hooks und Messskripte, alle grün. `SixFaultsTest` findet sechs eingebaute Verstöße (L1, L2, L3, L5, L7, L8), L4 und L6 haben eigene Tests.
+- Freie Pläne (Phase 1 bis 3) werden mit Exit 2 und einem Satz abgewiesen.
+- Startlast `acceptance-writer` im ersten Aufruf: 5.604 Tokens (Ziel höchstens 8.000).
+- Vom Bau-Agenten ergänzt und übernommen: Schwelle `standard_areas` (Startwert 3), `--limits` auch bei `lint`, Standardmuster für Schema und Sicherheit als Konstanten, im Mini-Plan entfällt "Block in keiner Welle" bei leerer Wave-Spalte.
+- Läuft im Einsatz mit: `acceptance-writer` an einem echten Block (roter Lauf zitiert, nur Testdateien im Commit), Phase 4 im neuen Format geplant und mit `lint` geprüft, eine echte Phase im Pilot mit Fix-Quote unter dem Basiswert.
