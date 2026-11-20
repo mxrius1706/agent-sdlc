@@ -16,8 +16,9 @@ import argparse
 import glob
 import json
 import os
+import re
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 def parse_ts(s):
@@ -62,7 +63,7 @@ def read_transcript(path):
         t["cr"] += u.get("cache_read_input_tokens", 0) or 0
         t["out"] += u.get("output_tokens", 0) or 0
         t["models"][model] = t["models"].get(model, 0) + 1
-    t["first"], t["last"], t["ts"] = first, last, stamps
+    t["first"], t["last"], t["stamps"] = first, last, stamps
     return t
 
 
@@ -71,8 +72,127 @@ IDLE_CAP = 300  # Sekunden: laengere Pausen (z. B. Warten auf den Nutzer) zaehle
 
 def secs(t):
     """Aktive Zeit: Summe der Abstaende zwischen Nachrichten, je Abstand hoechstens IDLE_CAP."""
-    ts = sorted(t.get("ts", []))
+    ts = sorted(t.get("stamps", []))
     return sum(min((b - a).total_seconds(), IDLE_CAP) for a, b in zip(ts, ts[1:]))
+
+
+# Reihenfolge der Rollenregeln, vom spezifischsten zum allgemeinsten, erste Treffer-Regel gewinnt:
+#  1. gate-review  (gate/thermo/phase plus Pruefwort)           - vor block-review, weil "block" auch im Gate-Text vorkommt
+#  2. gate-fix     (fix plus gate/thermo/umbau/phase)           - vor block-fix, sonst gewinnt eine Block-Id im Text
+#  3. spec         (konsistenz, spec, backflow, rueckfluss, adr) - vor block-review, "Review Konsistenz" ist Spec-Arbeit
+#  4. block-review (Pruefwort: review, nachpruef, diff, sammelbefund) - vor block-fix, "Fix-Review" ist ein Review
+#  5. block-fix    (fix, finding, befund)                       - vor build, weil "Fix build b3" ein Fix ist
+#  6. build        (build, bau, implement, refactor, write)
+#  7. research     (read, fetch, research, lese, suche, search, erkunde)
+#  8. other
+# Pruefwoerter: "review" deckt Re-Review, Fix-Review und Folge-Review mit ab.
+REVIEW_WORDS = r"review|nachpruef|\bdiffs?\b|sammelbefund"
+SPEC_WORDS = r"konsistenz|\bspecs?\b|backflow|rueckfluss|\badr\b"
+
+
+def classify_role(description):
+    """Rolle eines Subagenten aus seiner Beschreibung (Stichwortregeln, ohne Gross-/Kleinschreibung)."""
+    d = (description or "").lower()
+    has = lambda *words: any(w in d for w in words)
+    reviewing = re.search(REVIEW_WORDS, d)
+    if has("gate", "thermo", "phase") and reviewing:
+        return "gate-review"
+    if "fix" in d and has("gate", "thermo", "umbau", "phase"):
+        return "gate-fix"
+    if re.search(SPEC_WORDS, d):
+        return "spec"
+    if reviewing:
+        return "block-review"
+    if has("fix", "finding", "befund"):
+        return "block-fix"
+    if has("build", "bau", "implement", "refactor") or re.search(r"\bwrite\b", d):
+        return "build"
+    if has("read", "fetch", "research", "lese", "suche", "search", "erkunde"):
+        return "research"
+    return "other"
+
+
+ROLES = ["build", "block-review", "block-fix", "gate-review", "gate-fix", "spec", "research", "other"]
+
+
+def role_table(data):
+    """Je Rolle ein dict: role, agents (Anzahl), minutes (aktive Minuten), out (Ausgabe-Token)."""
+    rows = {r: {"role": r, "agents": 0, "minutes": 0.0, "out": 0} for r in ROLES}
+    for s in data:
+        for ag in s["agents"]:
+            row = rows[classify_role(ag["label"])]
+            row["agents"] += 1
+            row["minutes"] += secs(ag) / 60
+            row["out"] += ag["out"]
+    return [rows[r] for r in ROLES]
+
+
+def fix_quote(rows):
+    """Minuten der Fix-Rollen geteilt durch Minuten der Rolle build, auf 2 Stellen; None ohne build-Zeit."""
+    by = {r["role"]: r["minutes"] for r in rows}
+    if not by.get("build"):
+        return None
+    return round((by["block-fix"] + by["gate-fix"]) / by["build"], 2)
+
+
+def print_roles(data):
+    rows = role_table(data)
+    print(f"{'Rolle':<14} {'Agents':>6} {'Min':>8} {'out':>10}")
+    for row in rows:
+        print(f"{row['role']:<14} {row['agents']:>6} {row['minutes']:>8.1f} {row['out']:>10,}")
+    q = fix_quote(rows)
+    print(f"Fix-Quote {q:.2f}" if q is not None else "Fix-Quote -")
+
+
+def message_text(o):
+    """Text einer Assistenten-Zeile (alle Textbloecke), sonst leer."""
+    c = (o.get("message") or {}).get("content")
+    if isinstance(c, str):
+        return c
+    return " ".join(b.get("text", "") for b in c or [] if isinstance(b, dict) and b.get("type") == "text")
+
+
+def limit_gaps(path, gap_min=20):
+    """Luecken zwischen aufeinanderfolgenden Zeitstempeln ueber gap_min Minuten.
+
+    Je Luecke ein dict: start (ISO), minutes (gerundet), limit (True, wenn die Assistenten-Nachricht
+    davor die Woerter "limit" und "resets" enthaelt, ohne Gross-/Kleinschreibung).
+    """
+    events = []
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            try:
+                o = json.loads(line)
+            except ValueError:
+                continue
+            ts = parse_ts(o["timestamp"]) if isinstance(o, dict) and o.get("timestamp") else None
+            if ts:
+                events.append((ts, message_text(o).lower() if o.get("type") == "assistant" else None))
+    events.sort(key=lambda e: e[0])
+    gaps = []
+    last_text = ""
+    for (a, text), (b, _) in zip(events, events[1:]):
+        if text is not None:
+            last_text = text
+        minutes = (b - a).total_seconds() / 60
+        if minutes > gap_min:
+            gaps.append({"start": a.isoformat(), "minutes": round(minutes),
+                         "limit": "limit" in last_text and "resets" in last_text})
+    return gaps
+
+
+def gap_table(data, gap_min):
+    """Je Sitzung ein dict: project, session, gaps (Liste aus limit_gaps)."""
+    return [{"project": s["project"], "session": s["session"], "gaps": limit_gaps(s["main_path"], gap_min)}
+            for s in data]
+
+
+def print_gaps(data, gap_min):
+    for s in gap_table(data, gap_min):
+        gaps = s["gaps"]
+        print(f"{s['project'][-18:]} {s['session'][:8]}: {len(gaps)} Luecken")
+        for g in gaps:
+            print(f"  {g['start']}  {g['minutes']:>5} Min{'  LIMIT' if g['limit'] else ''}")
 
 
 def short_model(models):
@@ -81,7 +201,7 @@ def short_model(models):
     return ",".join(m.replace("claude-", "") for m in sorted(models, key=models.get, reverse=True)[:2])
 
 
-def collect(roots, project, session, since):
+def collect(roots, project, session, since, until=None):
     out = []
     seen_roots = set()
     for root in roots:
@@ -99,6 +219,8 @@ def collect(roots, project, session, since):
                 st = read_transcript(main)
                 if since and (not st["first"] or st["first"] < since):
                     continue
+                if until and st["first"] and st["first"] >= until:
+                    continue
                 agents = []
                 for sub in sorted(glob.glob(os.path.join(proj, sid, "subagents", "agent-*.jsonl"))):
                     meta = {}
@@ -113,7 +235,7 @@ def collect(roots, project, session, since):
                     agents.append(a)
                 out.append({"account": os.path.basename(os.path.dirname(root)) or root,
                             "project": os.path.basename(proj), "session": sid,
-                            "main": st, "agents": agents})
+                            "main": st, "agents": agents, "main_path": main})
     out.sort(key=lambda s: s["main"]["first"] or datetime.min.replace(tzinfo=timezone.utc))
     return out
 
@@ -127,19 +249,19 @@ HEAD = f"{'':<50} {'Modell':<26} {'Turns':>5} {'in':>9} {'cw':>10} {'cr':>12} {'
 
 def total(parts):
     """Summe. Die Zeitstempel werden vereinigt, parallele Subagenten zaehlen also nicht doppelt."""
-    t = {"n": 0, "in": 0, "cw": 0, "cr": 0, "out": 0, "models": {}, "first": None, "last": None, "ts": []}
+    t = {"n": 0, "in": 0, "cw": 0, "cr": 0, "out": 0, "models": {}, "first": None, "last": None, "stamps": []}
     for p in parts:
         for k in ("n", "in", "cw", "cr", "out"):
             t[k] += p[k]
         for m, c in p["models"].items():
             t["models"][m] = t["models"].get(m, 0) + c
-        t["ts"] += p.get("ts", [])
+        t["stamps"] += p.get("stamps", [])
     return t
 
 
 def to_json(s):
     def c(t):
-        return {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in t.items() if k != "ts"} | {"active_minutes": round(secs(t) / 60, 2)}
+        return {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in t.items() if k != "stamps"} | {"active_minutes": round(secs(t) / 60, 2)}
     return {"account": s["account"], "project": s["project"], "session": s["session"],
             "main": c(s["main"]), "agents": [c(a) | {"label": a["label"], "type": a["type"]} for a in s["agents"]]}
 
@@ -150,20 +272,40 @@ def main():
     ap.add_argument("--project", help="Teil des Projektordner-Namens")
     ap.add_argument("--session", help="Sitzungs-ID oder Anfang davon")
     ap.add_argument("--since", help="nur Sitzungen ab Datum (YYYY-MM-DD)")
+    ap.add_argument("--until", help="nur Sitzungen bis Datum (YYYY-MM-DD), der Endtag zaehlt mit")
     ap.add_argument("--by-agent", action="store_true", help="auch Zeile je Subagent")
+    ap.add_argument("--roles", action="store_true", help="Tabelle je Rolle der Subagenten")
+    ap.add_argument("--gaps", action="store_true", help="lange Pausen je Sitzung, Limit-Luecken markiert")
+    ap.add_argument("--gap-min", type=int, default=20, help="Mindestlaenge einer Luecke in Minuten (Standard 20)")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
 
     roots = a.root or sorted(glob.glob(os.path.expanduser("~/.claude*/projects")))
     since = datetime.fromisoformat(a.since).replace(tzinfo=timezone.utc) if a.since else None
-    data = collect(roots, a.project, a.session, since)
+    until = (datetime.fromisoformat(a.until).replace(tzinfo=timezone.utc) + timedelta(days=1)) if a.until else None
+    data = collect(roots, a.project, a.session, since, until)
     if a.json:
-        json.dump([to_json(s) for s in data], sys.stdout, indent=1, ensure_ascii=False)
+        if a.roles or a.gaps:
+            result = {}
+            if a.roles:
+                result["roles"] = role_table(data)
+                result["fix_quote"] = fix_quote(result["roles"])
+            if a.gaps:
+                result["gaps"] = gap_table(data, a.gap_min)
+        else:
+            result = [to_json(s) for s in data]
+        json.dump(result, sys.stdout, indent=1, ensure_ascii=False)
         print()
         return
     if not data:
         print("Keine Sitzungen gefunden.", file=sys.stderr)
         sys.exit(1)
+    if a.gaps:
+        print_gaps(data, a.gap_min)
+        return
+    if a.roles:
+        print_roles(data)
+        return
     print(HEAD)
     grand = []
     for s in data:
