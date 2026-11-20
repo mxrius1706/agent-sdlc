@@ -1,6 +1,6 @@
 # Plan: Phase 2 Rollen, Startlast, Laufzustand, Auslauf
 
-Rahmenplan: `umstellung-kosten.md`. Planungstiefe **Standard** (mehrere Bereiche: Agenten, Hooks, Skill-Texte, README; kein Schema, kein Sicherheitsbezug). Branch `umstellung/2-rollen`, Status 🔄 (freigegeben, im Bau).
+Rahmenplan: `umstellung-kosten.md`. Planungstiefe **Standard** (mehrere Bereiche: Agenten, Hooks, Skill-Texte, README; kein Schema, kein Sicherheitsbezug). Branch `umstellung/2-rollen`, Status 🔄 (gebaut, Gate 2 teilweise: Rest siehe offene Punkte).
 
 ## Kontext und Ziel
 
@@ -68,15 +68,15 @@ Rollen und Skill-Texte werden nicht per Unit-Test geprüft, sondern in Gate 2.
 
 ## Gate 2 (durch den Koordinator)
 
-- [ ] Alle Tests grün
-- [ ] **Hook-Probe:** `PreToolUse` auf `Agent` verweigert in einer echten Sitzung (mit künstlich niedriger Schwelle) einen neuen Start und lässt einen laufenden Block durch. Dabei werden auch `agent_id` und `transcript_path` aus der Eingabe protokolliert (offene Punkte der Recherche).
+- [x] Alle Tests grün
+- [x] **Hook-Probe:** `PreToolUse` auf `Agent` verweigert in einer echten Sitzung (mit künstlich niedriger Schwelle) einen neuen Start und lässt einen laufenden Block durch. Dabei werden auch `agent_id` und `transcript_path` aus der Eingabe protokolliert (offene Punkte der Recherche).
 - [ ] **Füllung stimmt** mit dem Wert der Statusleiste überein (Stichprobe), sonst Fenster oder Rechnung anpassen
-- [ ] **Startlast:** erster Aufruf jeder neuen Rolle höchstens 8.000 Tokens, gemessen mit `context-usage.py`
+- [x] **Startlast:** erster Aufruf jeder neuen Rolle höchstens 8.000 Tokens, gemessen mit `context-usage.py`
 - [ ] **Katalog-Test:** erscheint der Skill-Katalog, wenn `Skill` in der Werkzeugliste einer Rolle steht? Ergebnis in der README
 - [ ] **Rückfall:** fehlt eine Rolle, läuft `execute-plan` mit `general-purpose` durch (Probelauf mit umbenannter Datei)
 - [ ] **Wiederaufnahme:** eine neue Sitzung macht an einem angelegten Laufzustand weiter, ohne einen Block doppelt zu bauen
 - [ ] **Vergleichslauf** an einem echten Block des Pilotprojekts 1 mit Rollen, gemessen mit `session-cost.py`: Funde im Phasen-Review nicht höher als der Basiswert (braucht dich, weil es eine echte Phase ist)
-- [ ] `grep`: keine Projektnamen, Pfade oder Geviertstriche in Dateien und Commits
+- [x] `grep`: keine Projektnamen, Pfade oder Geviertstriche in Dateien und Commits
 
 ## Prüfung während des Baus
 
@@ -91,3 +91,9 @@ Limit-Auslöser über die Statusleiste, Kontextpaket-Builder (Phase 4), Plan-Lin
 - Verweigern per Hook ist in der Doku nur allgemein belegt. Die Hook-Probe in Gate 2 entscheidet. Fällt sie negativ aus, bleibt der Auslauf eine Anweisung im Text und `execute-plan` prüft die Marke selbst vor jedem Start.
 - Die 1-Mio.-Annahme kann falsch sein. Die Stichprobe gegen die Statusleiste fängt das.
 - Neue Agentendateien erscheinen erst nach Sitzungsneustart. Der Rückfall deckt das ab.
+
+## Ergebnis Gate 2 (Stand nach dem Bau)
+
+- Hook-Probe in einer echten Wegwerf-Sitzung: ohne Block-ID im Auftrag verweigert `PreToolUse` auf `Agent` den Start, mit der ID eines laufenden Blocks läuft er durch. Subagenten-Hooks tragen `agent_id` und `agent_type`, die Hauptsitzung nicht. `transcript_path` ist immer da und zeigt auch in Subagenten auf das Transkript der Hauptsitzung. Die Anweisung per `additionalContext` reichte schon, damit das Modell stoppt und die Übergabe schreibt.
+- Startlast im ersten Aufruf: `block-fixer` 5.495, `gate-reviewer` 4.812, `block-implementer` 6.216, `block-reviewer` 5.389 Tokens (Ziel höchstens 8.000). `general-purpose` zum Vergleich 36.952.
+- Offen: Füllung gegen die Statusleiste, Katalog-Test mit `Skill` in der Werkzeugliste, Rückfall-Probelauf, Wiederaufnahme-Probelauf, Vergleichslauf an einem echten Block.
