@@ -1,6 +1,6 @@
 # Plan: Phase 1 Messen (Mini)
 
-Rahmenplan: `umstellung-kosten.md`. Planungstiefe **Mini** (ein Bereich, eine Spec-Quelle, kein Schema, kein Sicherheitsbezug, keine neue Abhängigkeit). Branch `umstellung/1-messen`, Status 🔄 (freigegeben, im Bau).
+Rahmenplan: `umstellung-kosten.md`. Planungstiefe **Mini** (ein Bereich, eine Spec-Quelle, kein Schema, kein Sicherheitsbezug, keine neue Abhängigkeit). Branch `umstellung/1-messen`, Status ✅ (gebaut, Gate 1 bis auf Basiswerte erfuellt).
 
 ## Kontext und Ziel
 
