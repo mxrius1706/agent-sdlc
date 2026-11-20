@@ -411,5 +411,78 @@ class CliStageTest(unittest.TestCase):
             self.assertEqual(len(r.stderr.strip().splitlines()), 1, args)
 
 
+def depth_of(areas=1, specs=1, gates=3, files=5, flags=(), limits=None):
+    return pc.depth_for(areas, specs, gates, files, list(flags), pc.parse_limits(limits))
+
+
+class DepthTest(unittest.TestCase):
+    def test_mini_at_thresholds(self):
+        self.assertEqual(depth_of()[0], "mini")
+        self.assertEqual(depth_of(areas=0, specs=0, gates=0, files=0)[0], "mini")
+
+    def test_just_over_each_mini_threshold_is_standard(self):
+        for kw in ({"areas": 2}, {"specs": 2}, {"gates": 4}, {"files": 6}):
+            self.assertEqual(depth_of(**kw)[0], "standard", kw)
+
+    def test_standard_at_three_areas_voll_at_four(self):
+        self.assertEqual(depth_of(areas=3, specs=5, gates=9, files=50)[0], "standard")
+        self.assertEqual(depth_of(areas=4)[0], "voll")
+
+    def test_schema_and_security_flags_are_voll(self):
+        self.assertEqual(depth_of(flags=["schema"])[0], "voll")
+        self.assertEqual(depth_of(flags=["security"])[0], "voll")
+
+    def test_other_flags_raise_to_standard(self):
+        for flag in ("exclusive", "dependency", "nopattern"):
+            self.assertEqual(depth_of(flags=[flag])[0], "standard", flag)
+        self.assertEqual(depth_of(areas=4, flags=["dependency"])[0], "voll")
+
+    def test_limits_override(self):
+        self.assertEqual(depth_of(areas=2, limits="areas=2")[0], "mini")
+        self.assertEqual(depth_of(files=9, limits="files=9")[0], "mini")
+        self.assertEqual(depth_of(gates=5, limits="gate_points=5")[0], "mini")
+        self.assertEqual(depth_of(specs=3, limits="spec_sources=3")[0], "mini")
+        self.assertEqual(depth_of(areas=4, limits="standard_areas=4")[0], "standard")
+        self.assertEqual(depth_of(files=5, limits="files=4")[0], "standard")
+
+    def test_limits_ignores_other_limits(self):
+        self.assertEqual(depth_of(limits="wave_blocks=9,block_tasks=9")[0], "mini")
+
+    def test_reasons_not_empty(self):
+        self.assertTrue(depth_of(areas=4)[1])
+
+
+class CliDepthTest(unittest.TestCase):
+    BASE = ["depth", "--areas", "1", "--spec-sources", "1", "--gate-points", "3", "--files", "5"]
+
+    def test_output_shape(self):
+        r = run(*self.BASE)
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(r.stdout.splitlines()[0], "mini")
+        self.assertGreater(len(r.stdout.splitlines()), 1)
+
+    def test_flags_repeated_and_listed(self):
+        a = run(*self.BASE, "--flag", "schema", "--flag", "exclusive")
+        b = run(*self.BASE, "--flag", "schema", "exclusive")
+        self.assertEqual(a.stdout.splitlines()[0], "voll")
+        self.assertEqual(a.stdout, b.stdout)
+
+    def test_limits_and_determinism(self):
+        args = [*self.BASE[:2], "2", *self.BASE[3:], "--limits", "areas=2"]
+        r = run(*args)
+        self.assertEqual(r.stdout.splitlines()[0], "mini")
+        self.assertEqual(r.stdout, run(*args).stdout)
+
+    def test_input_errors_exit_2(self):
+        for extra in (["--flag", "bogus"], ["--limits", "areas=x"], ["--limits", "zzz=1"]):
+            r = run(*self.BASE, *extra)
+            self.assertEqual(r.returncode, 2, extra)
+            self.assertNotIn("Traceback", r.stderr)
+        r = run("depth", "--areas", "1")
+        self.assertEqual(r.returncode, 2)
+        self.assertEqual(len(r.stderr.strip().splitlines()), 1)
+        self.assertEqual(run("depth", "--areas", "x").returncode, 2)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -492,8 +492,33 @@ def cmd_stage(args):
     return 0
 
 
+def depth_for(areas, spec_sources, gate_points, files, flags, limits):
+    """Planungstiefe aus Kennzahlen -> (mini|standard|voll, Gruende)."""
+    reasons = [f"Bereiche: {areas}, Spec-Quellen: {spec_sources}, Gate-Punkte: {gate_points}, Dateien: {files}"]
+    if flags:
+        reasons.append("Flags: " + ", ".join(sorted(set(flags))))
+    heavy = bool({"schema", "security"} & set(flags))
+    mini = (areas <= limits["areas"] and spec_sources <= limits["spec_sources"]
+            and gate_points <= limits["gate_points"] and files <= limits["files"] and not flags)
+    if mini:
+        return "mini", reasons
+    if areas <= limits["standard_areas"] and not heavy:
+        return "standard", reasons
+    if heavy:
+        reasons.append("Flag schema oder security verlangt voll")
+    else:
+        reasons.append(f"Mehr als {limits['standard_areas']} Bereiche")
+    return "voll", reasons
+
+
 def cmd_depth(args):
-    raise InputError("depth ist noch nicht gebaut")
+    limits = parse_limits(args.limits)
+    numbers = (args.areas, args.spec_sources, args.gate_points, args.files)
+    if min(numbers) < 0:
+        raise InputError("Kennzahlen duerfen nicht negativ sein")
+    word, reasons = depth_for(*numbers, args.flag, limits)
+    print("\n".join([word] + reasons))
+    return 0
 
 
 def main(argv=None):
