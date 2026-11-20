@@ -1,6 +1,6 @@
 # Plan: Phase 4 Kontextpaket und Gates
 
-Rahmenplan: `umstellung-kosten.md`. Planungstiefe **voll** (`plan-check.py depth`: mehr als 3 Bereiche). Stufe **L** (`plan-check.py stage`: die Tiefe voll setzt die Untergrenze). Gebaut wird deshalb mit Abnahmetests vor jedem Skript-Block und mit voller Gate-Reihenfolge, so wie es dieser Plan selbst für Stufe L vorsieht. Branch `umstellung/4-paket-gates`, Status 🔄 (freigegeben, im Bau).
+Rahmenplan: `umstellung-kosten.md`. Planungstiefe **voll** (`plan-check.py depth`: mehr als 3 Bereiche). Stufe **L** (`plan-check.py stage`: die Tiefe voll setzt die Untergrenze). Gebaut wird deshalb mit Abnahmetests vor jedem Skript-Block und mit voller Gate-Reihenfolge, so wie es dieser Plan selbst für Stufe L vorsieht. Branch `umstellung/4-paket-gates`, Status ✅ (gebaut, Gate 4 bis auf den Pilotpunkt).
 
 ## Context
 
@@ -99,12 +99,12 @@ Alle Skripte über ihre öffentlichen Funktionen und als Unterprozess gegen synt
 
 ## Gate 4
 
-- [ ] Alle Tests grün
-- [ ] `plan-check.py lint` über diesen Plan ist grün (erster Einsatz im neuen Format)
-- [ ] `context-pack.py`: gleiche Eingabe gleicher Hash, absichtlich fehlender Kontext steht im Manifest (Probelauf)
-- [ ] `gate-precheck.py` an einem echten Diff der Repos: fängt einen eingebauten Mangel
-- [ ] Zerleger-Parität grün
-- [ ] `grep`: keine Projektnamen, Pfade oder Geviertstriche
+- [x] Alle Tests grün
+- [x] `plan-check.py lint` über diesen Plan ist grün (erster Einsatz im neuen Format)
+- [x] `context-pack.py`: gleiche Eingabe gleicher Hash, absichtlich fehlender Kontext steht im Manifest (Probelauf)
+- [x] `gate-precheck.py` an einem echten Diff der Repos: fängt einen eingebauten Mangel
+- [x] Zerleger-Parität grün
+- [x] `grep`: keine Projektnamen, Pfade oder Geviertstriche
 - [ ] Läuft im Pilot mit: Hauptsitzung liest in den ersten Turns weniger Dateien als der Basiswert, eine Stufe-M-Phase mit parallelen Gates, Kalenderzeit des Gate-Abschnitts unter dem Basiswert, Nachlade-Quote an einem echten Paket
 
 ## Out of scope
@@ -116,3 +116,14 @@ Zitierpflicht (entscheidet Phase 5 nach der Nachlade-Quote), Löschen von Kontex
 - `maxTurns` kann einen Block mitten in der Arbeit beenden. Die Commits bleiben, der Block geht als unvollständig zurück an den Koordinator. Die Startwerte sind bewusst großzügig.
 - Parallele Gates können Arbeit verschwenden, wenn der Handlauf ein Designproblem findet. Deshalb nur bei S und M.
 - Das Paket kann Kontext verfehlen. Das Manifest macht das sichtbar, die Nachlade-Quote misst es, die Zitierpflicht bleibt als Rückfall offen.
+
+## Ergebnis Gate 4 (Stand nach dem Bau)
+
+- Alle sechs Testsuiten grün. `plan-check.py lint` über diesen Plan grün, erster Einsatz im neuen Format. Die Stufe kam aus dem Skript (L, weil die Tiefe voll die Untergrenze setzt), nicht aus meiner Annahme.
+- Stufe L wurde eingehalten: je Skript-Block erst `acceptance-writer` (rote Tests aus dem Plan, nur Testdateien im Commit), dann `block-implementer` ohne Änderung der Abnahmetests. Das ist zugleich der Probelauf des offenen Gate-3-Punkts.
+- `context-pack.py`: gleiche Eingabe gleiche Bytes, zu großes Paket Exit 3 ohne Datei, fehlendes Glossar steht in den `notes` des Manifests.
+- `gate-precheck.py` an einem Repo mit drei eingebauten Mängeln (Trailer fehlt, Datei über 1.000 Zeilen, kaputter Link): alle drei gefunden, `thermo: yes`.
+- Zerleger-Parität läuft und besteht.
+- Bei der Durchsicht fiel auf: der Vorlauf stand zuerst nur bei Stufe S und M im Text. Er ist mechanisch und gilt bei jeder Stufe, korrigiert vor dem Merge.
+- Hinweis: `context-pack.py` sortiert die `_Avoid_`-Zeile eines Glossarbegriffs hinter die Beschreibung (verlangte ein Abnahmetest), der Text wird nicht wörtlich übernommen.
+- Läuft im Pilot mit: Hauptsitzung liest in den ersten Turns weniger Dateien als der Basiswert, eine Stufe-M-Phase mit parallelen Gates und Kalenderzeit unter dem Basiswert, Nachlade-Quote an einem echten Paket.
