@@ -280,7 +280,7 @@ Entscheidungen, die während des Bauens fallen, wandern **sofort** in den Entsch
 
 **Geschwindigkeit kommt aus weniger Übergaben, nicht aus schwächeren Prüfungen.** Jede Übergabe — Worktree, Dispatch, Review, Rebase, Merge, Testlauf — kostet Minuten. Ein Plan, der in zwanzig Einzeltasks zerfällt, zahlt das zwanzigmal; fünf Blöcke zahlen es fünfmal. Dass ein Block mit einem Review auskommt, ist nur deshalb vertretbar, weil am Phasenende die beiden Gates in voller Tiefe stehen. Das Netz rechtfertigt den Sprung, nicht umgekehrt.
 
-Dazu gehört eine Arbeitsteilung bei den Modellen: Implementierer, Block-Reviewer und Fixer laufen auf dem **günstigeren Modell**, ausdrücklich gesetzt und nie vom Koordinator geerbt. Die Gates am Phasenende laufen auf dem **starken Modell**. Ein Netz auf dem billigen Modell macht den Tausch zunichte.
+Dazu gehört eine Arbeitsteilung bei den Modellen: Alle Subagenten (Abnahmetests, Implementierer, Block-Reviewer, Fixer, Phasen-Reviewer) laufen auf **Sonnet**, ausdrücklich gesetzt und nie vom Koordinator geerbt. Nur die Hauptsitzung läuft auf dem starken Modell. Die Tiefe der Gates kommt aus den Linsen, dem Vorlauf und dem Nachtrags-Lauf, nicht aus dem Modell.
 
 Der Block-Review beantwortet beide alten Fragen in einem Durchgang, in dieser Reihenfolge: **Spec-Treue** zuerst — ist genau das gebaut, was der Plan verlangt, und ist etwas gebaut, das er **nicht** verlangt? Der zweite Fall ist der Fund, den sonst niemand macht. **Qualität** danach, sonst wird über die Machart von etwas geurteilt, das noch das Falsche tut. Blockierend sind nur die zwei obersten Schweregrade; der Rest wird gesammelt und ans Gate übergeben, wo ein Muster sichtbar wird, das ein einzelner Block nicht zeigt.
 

@@ -84,7 +84,7 @@ Four sources, in this order of authority:
 
 ### The brief
 
-Every reviewer runs as a subagent on the **strong model**, set explicitly rather than inherited. This is the phase gate; a net on the cheap model defeats the trade `execute-plan` makes with its lighter per-block review. Every reviewer gets: the changed files, the governing specs with relevant requirement numbers, the current phase with its gate, the architecture rules, the true pre-check flags, `CODING_STANDARDS.md` if present, the glossary terms for the changed areas (content, not a path), and its own lens. The structure reviewer also gets the smell baseline pasted in full, having no other access to it. Plus two instructions:
+Every reviewer runs as a subagent on `sonnet`, set explicitly rather than inherited; only the main session runs on the strong model. Every reviewer gets: the changed files, the governing specs with relevant requirement numbers, the current phase with its gate, the architecture rules, the true pre-check flags, `CODING_STANDARDS.md` if present, the glossary terms for the changed areas (content, not a path), and its own lens. The structure reviewer also gets the smell baseline pasted in full, having no other access to it. Plus two instructions:
 
 **Stay in your lens.** A sibling covers findings outside it.
 
@@ -112,7 +112,7 @@ A finding in the top two bands may be a class of defect rather than an incident.
 
 ## Follow-up run
 
-After a round of fixes, the next run is a **follow-up run**. After one shared fix round (findings of this review and of `handlauf` together) exactly one follow-up run follows. Its input is the fix diff (`git diff <commit the last report names>...HEAD`) and the last report's findings, and one reviewer on the strong model carries all three lenses over it. It answers two things:
+After a round of fixes, the next run is a **follow-up run**. After one shared fix round (findings of this review and of `handlauf` together) exactly one follow-up run follows. Its input is the fix diff (`git diff <commit the last report names>...HEAD`) and the last report's findings, and one reviewer on `sonnet` carries all three lenses over it. It answers two things:
 
 1. **Per previous finding:** fixed or not, judged against the finding as written, with the location of the fix.
 2. **New findings in the fix diff.** Those in the top four bands count as findings. Informational ones are collected in the report and open no further fix round.

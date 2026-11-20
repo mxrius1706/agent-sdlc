@@ -2,7 +2,7 @@
 name: gate-reviewer
 description: "Reviews the whole diff of a finished phase against the plan and the rules bundle before the merge. Dispatched by execute-plan once all blocks are merged into the phase branch. Reads only, never fixes."
 tools: Read, Grep, Glob, Bash
-model: opus
+model: sonnet
 omitClaudeMd: true
 maxTurns: 60
 ---

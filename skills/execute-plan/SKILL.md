@@ -15,9 +15,9 @@ Work a released plan, wave by wave, block by block, each block in its own worktr
 
 This skill owns the model choice.
 
-**Every block subagent this skill starts runs on `model: "sonnet"`**: acceptance writers, implementers, block reviewers, fixers. The roles `acceptance-writer`, `block-implementer`, `block-reviewer` and `block-fixer` carry it in their definition; a `general-purpose` fallback gets it explicitly on the `Agent` call, so no subagent inherits the coordinator's model. A stronger model for one block (delicate integrity-critical or schema logic, or a block that failed twice on the cheaper model) only after asking the user in the chat.
+**Every subagent this skill starts runs on `model: "sonnet"`**: acceptance writers, implementers, block reviewers, fixers and the phase reviewer. Only the main session runs on the strong model. The roles `acceptance-writer`, `block-implementer`, `block-reviewer` and `block-fixer` carry it in their definition; a `general-purpose` fallback gets it explicitly on the `Agent` call, so no subagent inherits the coordinator's model. A stronger model for one subagent only after asking the user in the chat.
 
-**The phase gate is the exception:** the role `gate-reviewer` (fallback `general-purpose` with `model: "opus"`), `review-changes` and `thermo-nuclear-code-quality-review` run on the **strong model**. They are the net under the cheaper block review; a net on the cheap model defeats the trade.
+**The phase gate has no exception:** the role `gate-reviewer` (fallback `general-purpose` with `model: "sonnet"`) and the reviewers of `review-changes` and `thermo-nuclear-code-quality-review` also run on `sonnet`. Depth comes from the lenses, the pre-check and the follow-up run, not from the model.
 
 ## Roles
 
@@ -187,7 +187,7 @@ In the order blocks finish.
 
 ## Step 7: Close the plan
 
-All waves merged and green: hand over to the phase gate. The stage in the plan decides its shape. The reviews keep their full depth on the strong model. The whole-phase review is dispatched as `gate-reviewer`.
+All waves merged and green: hand over to the phase gate. The stage in the plan decides its shape. The reviews keep their full depth. The whole-phase review is dispatched as `gate-reviewer`.
 
 **Run the gate without asking.** Work the steps below one after the other and report once at the end. Stop only for: `handlauf` (the user starts it), the release go, a `BLOCKED` block, the Auslauf mark, or a decision only the user can make. "Shall I run the next step?" is not a stop. A plan without a stage (written before `plan-check.py`) is treated as stage M.
 
@@ -214,7 +214,7 @@ When the mark `.claude/run/auslauf-<session_id>` exists, the context is nearly f
 
 - Every subagent of a block gets the block's pack path and nothing hand-copied.
 - Subagents write the implementation and the acceptance tests; the coordinator does not.
-- Every block subagent runs on `sonnet`; going up a model waits for the user.
+- Every subagent runs on `sonnet`; going up a model waits for the user.
 - The run state is current after every transition.
 - A released plan keeps its blocks unless the user agrees to a new cut.
 - Three blocks at most, with disjoint files.
