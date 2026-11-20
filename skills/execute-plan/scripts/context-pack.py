@@ -10,6 +10,7 @@ Exit 2: Plan fehlt oder Block unbekannt (ein Satz auf stderr). Exit 3: Buendel g
 --max-chars (ein Satz auf stderr, keine Ausgabedatei). Gleiche Eingabe gibt gleiche Bytes.
 Dieses Skript importiert kein anderes Skript; chunk_markdown ist eine Kopie aus context-usage.py.
 """
+import os
 import re
 
 MIN_LINE = 25  # Zeichen: kuerzere Zeilen zaehlen nicht (Trenner, Zufallstreffer)
@@ -17,6 +18,9 @@ MIN_LINES = 3  # Abschnitte mit weniger verschiedenen Zeilen entfallen
 
 HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 REQ_NO = re.compile(r"^([A-Za-z]{1,4}-?\d+[a-z]?|\d+(?:\.\d+)+)(?=$|[\s:.)\]-])")
+SKIP_DIRS = {".git", "node_modules", ".worktrees", ".obsidian", "__pycache__", ".venv"}
+SUB_TITLES = ("für subagenten", "fuer subagenten")
+
 REQ_ID = re.compile(r"\b[A-Z]{2,6}-\d+[a-z]?\b")
 
 
@@ -137,3 +141,209 @@ def block_scope(plan_path, block_id):
             if rid not in reqs:
                 reqs.append(rid)
     return files, reqs, rows
+
+
+# ---- Abschnitte sammeln ----
+
+def read_text(path):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            return fh.read()
+    except OSError:
+        return None
+
+
+def rel_id_path(path, root):
+    """Pfad -> Pfad relativ zu root mit /; ausserhalb von root: externer Ordnername und Dateiname."""
+    absp, absr = os.path.abspath(path), os.path.abspath(root)
+    if absp == absr or absp.startswith(absr + os.sep):
+        return os.path.relpath(absp, absr).replace(os.sep, "/")
+    return "extern/" + os.path.basename(os.path.dirname(absp)) + "/" + os.path.basename(absp)
+
+
+def walk_files(top, name=None, suffix=None):
+    """Alle Dateien unter top (sortiert, ohne SKIP_DIRS), gefiltert nach Name oder Endung."""
+    out = []
+    for base, dirs, files in os.walk(top):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+        for f in sorted(files):
+            if (name and f == name) or (suffix and f.endswith(suffix)):
+                out.append(os.path.join(base, f))
+    return out
+
+
+def glob_match(pattern, path):
+    """Glob mit *, ** und ? gegen einen Pfad mit /. * und ? bleiben innerhalb eines Ordners."""
+    rx = ""
+    i = 0
+    while i < len(pattern):
+        c = pattern[i]
+        if pattern.startswith("**/", i):
+            rx += "(?:.*/)?"
+            i += 3
+            continue
+        if pattern.startswith("**", i):
+            rx += ".*"
+            i += 2
+            continue
+        rx += "[^/]*" if c == "*" else "[^/]" if c == "?" else re.escape(c)
+        i += 1
+    return re.fullmatch(rx, path) is not None
+
+
+def rule_paths(text):
+    """Regeltext -> (Glob-Liste aus dem Frontmatter-Schluessel paths, Text nach dem Frontmatter)."""
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0].strip() != "---":
+        return [], text
+    end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
+    if end is None:
+        return [], text
+    paths = []
+    in_paths = False
+    for ln in lines[1:end]:
+        m = re.match(r"^paths:\s*(.*?)\s*$", ln)
+        if m:
+            in_paths = True
+            val = m.group(1)
+            if val.startswith("["):
+                paths += [clean_glob(x) for x in val.strip("[]").split(",") if clean_glob(x)]
+            elif val:
+                paths.append(clean_glob(val))
+            continue
+        item = re.match(r"^\s+-\s+(.*?)\s*$", ln)
+        if in_paths and item:
+            paths.append(clean_glob(item.group(1)))
+        elif ln.strip() and not ln.startswith(" "):
+            in_paths = False
+    return [p for p in paths if p], "".join(lines[end + 1:])
+
+
+def clean_glob(raw):
+    return raw.strip().strip("\"'").strip()
+
+
+def is_sub_title(title):
+    return title.strip().lower() in SUB_TITLES
+
+
+def sub_sections(relpath, text):
+    """Abschnitte "Für Subagenten" samt Unterabschnitten, woertlich -> Liste {id, kind, text}."""
+    raw = split_raw(text)
+    out = []
+    i = 0
+    while i < len(raw):
+        path, title, level, lines = raw[i]
+        if level and is_sub_title(title):
+            parts = ["\n".join(lines)]
+            j = i + 1
+            while j < len(raw) and raw[j][2] > level:
+                parts.append("\n".join(raw[j][3]))
+                j += 1
+            out.append({"id": f"{relpath}#{path}", "kind": "subagenten", "text": "\n".join(parts) + "\n"})
+            i = j
+        else:
+            i += 1
+    return out
+
+
+def covered(sid, chosen):
+    """Ist die ID ein gewaehlter Abschnitt oder liegt sie darunter?"""
+    return any(sid == c or sid.startswith(c + " > ") for c in chosen)
+
+
+def as_items(chunks, kind):
+    return [{"id": c["id"], "kind": kind, "text": c["text"]} for c in chunks]
+
+
+def area_dirs(files):
+    """Dateien des Blocks -> Ordner darueber, nahe zuerst, ohne Wurzel, ohne Wiederholung."""
+    out = []
+    for f in files:
+        d = f.strip("/") if f.endswith("/") else os.path.dirname(f)
+        while d and d != ".":
+            if d not in out:
+                out.append(d)
+            d = os.path.dirname(d)
+    out.sort(key=lambda x: (-x.count("/"), x))
+    return out
+
+
+def word_in(term, text):
+    pat = r"(?<![A-Za-z0-9\u00c0-\u024f])" + re.escape(term) + r"(?![A-Za-z0-9\u00c0-\u024f])"
+    return re.search(pat, text, re.IGNORECASE) is not None
+
+
+def spec_files(specs):
+    out = []
+    for s in specs:
+        if os.path.isdir(s):
+            out += walk_files(s, suffix=".md")
+        elif os.path.isfile(s):
+            out.append(s)
+    return out
+
+
+def collect(scope, root, specs, global_claude):
+    """Block-Umfang -> (included, excluded): Listen {id, kind, text} in Buendel-Reihenfolge."""
+    files, reqs, rows = scope
+    inc, exc = [], []
+
+    def take(chunks, kind, hit):
+        (inc if hit else exc).extend(as_items(chunks, kind))
+
+    # 1. Subagenten-Abschnitte: Projekt, dann global
+    root_claude = os.path.join(root, "CLAUDE.md")
+    sources = [(root_claude, "CLAUDE.md")]
+    if global_claude:
+        sources.append((global_claude, "global/" + os.path.basename(global_claude)))
+    for path, rel in sources:
+        text = read_text(path)
+        if text is None:
+            continue
+        subs = sub_sections(rel, text)
+        inc.extend(subs)
+        chosen = [x["id"] for x in subs]
+        exc.extend(as_items([c for c in chunk_markdown(rel, text) if not covered(c["id"], chosen)],
+                            "subagenten"))
+    # 2. Bereichs-CLAUDE.md, nahe zuerst
+    wanted = []
+    for d in area_dirs(files):
+        path = os.path.join(root, *d.split("/"), "CLAUDE.md")
+        if os.path.isfile(path):
+            wanted.append(os.path.abspath(path))
+    for path in walk_files(root, name="CLAUDE.md"):
+        rel = rel_id_path(path, root)
+        if rel == "CLAUDE.md":
+            continue
+        if os.path.abspath(path) not in wanted:
+            exc.extend(as_items(chunk_markdown(rel, read_text(path) or ""), "bereich"))
+    inc_area = [it for w in wanted for it in as_items(
+        chunk_markdown(rel_id_path(w, root), read_text(w) or ""), "bereich")]
+    inc.extend(inc_area)
+    # 3. Pfadregeln
+    for path in sorted(walk_files(os.path.join(root, ".claude", "rules"), suffix=".md")):
+        rel = rel_id_path(path, root)
+        globs, rest = rule_paths(read_text(path) or "")
+        hit = any(glob_match(g, f) for g in globs for f in files)
+        chunks = chunk_markdown(rel, rest)
+        if hit and not chunks and rest.strip():
+            chunks = [{"id": rel + "#", "text": rest}]
+        take(chunks, "regel", hit)
+    # 4. Spec-Abschnitte nach Anforderungskennung
+    spec_list = [p for p in spec_files(specs) if os.path.basename(p) != "GLOSSARY.md"]
+    for path in spec_list:
+        for c in chunk_markdown(rel_id_path(path, root), read_text(path) or ""):
+            hit = any(re.search(r"(?<![\w-])" + re.escape(r) + r"(?![\w-])", c["text"]) for r in reqs)
+            take([c], "spec", hit)
+    # 5. Glossarbegriffe per Textvergleich
+    haystack = "\n".join([column(r, "task") for r in rows] + list(files))
+    seen = set()
+    for path in walk_files(root, name="GLOSSARY.md") + [p for p in spec_files(specs)
+                                                       if os.path.basename(p) == "GLOSSARY.md"]:
+        if os.path.abspath(path) in seen:
+            continue
+        seen.add(os.path.abspath(path))
+        for c in chunk_markdown(rel_id_path(path, root), read_text(path) or ""):
+            take([c], "glossar", bool(c["heading"]) and word_in(c["heading"], haystack))
+    return inc, exc
