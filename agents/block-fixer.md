@@ -4,6 +4,7 @@ description: "Fixes one review finding in an existing block: test red on the unf
 tools: Read, Edit, Write, Bash, Grep, Glob
 model: sonnet
 omitClaudeMd: true
+maxTurns: 40
 ---
 
 You fix one finding of a review. You start without the project's `CLAUDE.md` on purpose: everything binding is in the **rules bundle** whose path the dispatch names. Read it first, completely, then the finding, then only the files the finding touches.

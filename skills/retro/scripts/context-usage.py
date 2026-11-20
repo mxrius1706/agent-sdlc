@@ -384,6 +384,40 @@ def find_sessions(roots, project, since):
     return out
 
 
+def reload_report(manifest, rows):
+    """Paket-Manifest und Zeilen aus aggregate() (nur Subagenten-Scans) -> Nachladen und Ueberversorgung.
+
+    reloaded: voll gelesen im Subagent, nicht im Paket. unused_in_pack: im Paket, im Subagent
+    nur mit Stufe C oder gar nicht geladen. quote: reloaded / alle gelesenen, "-" ohne Lesungen.
+    """
+    included = set(manifest.get("included") or [])
+    read = [r["id"] for r in rows if r["channels"]["gelesen"] > 0]
+    reloaded = sorted(i for i in read if i not in included)
+    tier = {r["id"]: r["tier"] for r in rows}
+    unused = sorted(i for i in included if tier.get(i) in (None, "C"))
+    quote = f"{len(reloaded) / len(read):.2f}" if read else "-"
+    return {"reloaded": reloaded, "unused_in_pack": unused, "quote": quote}
+
+
+def fmt_reload(rep):
+    lines = ["Nachladen und Ueberversorgung", "",
+             "| Art | Abschnitt |", "|---|---|"]
+    lines += [f"| nachgeladen | {i} |" for i in rep["reloaded"]]
+    lines += [f"| ungenutzt im Paket | {i} |" for i in rep["unused_in_pack"]]
+    lines += ["", f"Nachlade-Quote: {rep['quote']}"]
+    return "\n".join(lines)
+
+
+def load_manifest(path):
+    """Manifest-JSON -> dict, sonst None."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            m = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    return m if isinstance(m, dict) and isinstance(m.get("included", []), list) else None
+
+
 def fmt_table(rows, top):
     shown = [r for r in rows if r["tier"] is not None][:top]
     lines = ["| Abschnitt | Teil | gelesen | kopiert | inj. Haupt | inj. Sub | Zeichen | Stufe | Ballast | Sub-Zeichen |",
@@ -403,7 +437,7 @@ def fmt_startlast(start):
     return "\n".join(lines)
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", action="append", help="projects-Ordner, mehrfach moeglich (Standard: ~/.claude*/projects)")
     ap.add_argument("--project", help="Teil des Projektordner-Namens (Standard: Name des Projektordners)")
@@ -412,7 +446,14 @@ def main():
     ap.add_argument("--since", help="nur Sitzungen ab Datum (YYYY-MM-DD)")
     ap.add_argument("--top", type=int, default=20, help="Zeilen der Tabelle (Standard 20)")
     ap.add_argument("--json-out", help="Pfad der JSON-Datei")
-    a = ap.parse_args()
+    ap.add_argument("--pack", help="Manifest eines Kontextpakets (JSON): Nachladen und Ueberversorgung der Subagenten")
+    a = ap.parse_args(argv)
+    manifest = None
+    if a.pack:
+        manifest = load_manifest(a.pack)
+        if manifest is None:
+            print(f"Das Manifest {a.pack} ist nicht lesbar oder kein gueltiges Paket-Manifest.", file=sys.stderr)
+            return 2
 
     roots = a.root or sorted(glob.glob(os.path.expanduser("~/.claude*/projects")))
     project = a.project or os.path.basename(os.path.abspath(a.project_dir))
@@ -447,13 +488,21 @@ def main():
     print(fmt_table(rows, a.top))
     print()
     print(fmt_startlast(start))
+    pack = None
+    if manifest is not None:
+        pack = reload_report(manifest, aggregate(sections, [sc for sc in scans if sc[0] != "main"]))
+        print()
+        print(fmt_reload(pack))
     if a.json_out:
         meta = {"project": project, "since": a.since, "sessions": len(sessions), "subagents": n_subs,
                 "docs": len(docs), "sections": len(rows), "loaded": loaded}
         d = os.path.dirname(os.path.abspath(a.json_out))
         os.makedirs(d, exist_ok=True)
+        out = {"meta": meta, "sections": rows, "startlast": start}
+        if pack is not None:
+            out["pack"] = pack
         with open(a.json_out, "w", encoding="utf-8") as fh:
-            json.dump({"meta": meta, "sections": rows, "startlast": start}, fh, indent=2, ensure_ascii=False)
+            json.dump(out, fh, indent=2, ensure_ascii=False)
     return 0
 
 

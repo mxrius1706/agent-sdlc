@@ -22,13 +22,13 @@ Der Ausgangspunkt ist eine Beobachtung. Ein Agent, der bei jeder Sitzung bei nul
 | `spec-consistency` | Den Spec-Graph auf Widersprüche prüfen. Auslöser statt Takt, reiner Bericht |
 | `plan-build` | Aus den fertigen Specs die Bauphasen mit Gates ableiten und in den Fahrplan schreiben |
 | `planning` | Plan je Bauphase, im Planungsmodus geschrieben, vor dem Branch, mit Block- und Aufgabentabellen, Wellen und Out of Scope. `scripts/plan-check.py` legt Planungstiefe und Stufe fest und prüft den Plan vor der Freigabe |
-| `execute-plan` | Den freigegebenen Plan abarbeiten, Block für Block im eigenen Worktree, bis zu drei parallel |
+| `execute-plan` | Den freigegebenen Plan abarbeiten, Block für Block im eigenen Worktree, bis zu drei parallel. `scripts/context-pack.py` baut je Block ein Paket mit Manifest, das nie abgeschnitten wird |
 | `testing` | Testdisziplin. Zuerst der fehlschlagende Test, Verify Red ist Pflicht. Getestet wird an den Schnittstellen, die der Plan nennt |
 | `handlauf` | Drittes Gate, vor den Code-Gates. Die gebaute Fläche im Browser ansehen und durchklicken, wie ein Nutzer sie erlebt. Eigene Sitzung, kein Review-Input, reiner Bericht |
-| `review-changes` | Erstes Code-Gate am Phasenende. Drei Linsen parallel, Gate-Abgleich, reiner Bericht |
+| `review-changes` | Erstes Code-Gate am Phasenende. Drei Linsen parallel, Gate-Abgleich, reiner Bericht. `scripts/gate-precheck.py` prüft vorher mechanisch Befehle, Trailer, Dateigrößen und Verweisziele |
 | `thermo-nuclear-code-quality-review` | Zweites Gate. Fragt nicht ob der Code richtig ist, sondern ob er wartbar bleibt |
 | `retro` | Nach der Phase: Was hat die Arbeit schwer gemacht? Mechanisches wird ein Check, Urteilsfragen werden Regeln für die Reviewer. Ändert die Umgebung, nicht den Code |
-| `config-sync` | Die Konfiguration gegen ihre vier Autoritäten prüfen und die Drift nachziehen |
+| `config-sync` | Die Konfiguration gegen ihre vier Autoritäten prüfen und die Drift nachziehen. `scripts/ref-check.py` prüft vorab, ob Pfade in Backticks existieren |
 | `session-recap` | Handoff am Sitzungsende, prüft dabei den Fahrplan auf Drift |
 | `diagnosing-bugs` | Quereinstieg, jederzeit: etwas ist kaputt. Erst eine schnelle Prüfung, die genau diesen Fehler rot zeigt, dann eingrenzen, Hypothesen, Fix mit Regressionstest |
 | `grill-me` → `grilling` + `domain-modeling` | Das Interview-Verfahren. Entscheidungsbaum in Runden, bis keine Verzweigung offen ist; pflegt dabei Glossar und Entscheidungsdatensätze |

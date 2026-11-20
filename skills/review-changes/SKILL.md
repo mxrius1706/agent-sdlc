@@ -33,6 +33,18 @@ Before reading code, from the file list alone: which of the project's invariants
 
 If the repo has a `CODING_STANDARDS.md` (the judgement rules `retro` collected from earlier reviews), read it here and hand it to the structure lens. Reviewers read it; implementing sessions never load it.
 
+## Pre-check before the models
+
+Run the mechanical checks first, from the repository root:
+
+```
+python3 -I <skill-dir>/scripts/gate-precheck.py --base <base> --head HEAD --cmd "<verification command>" ... --trailer "<trailer>"
+```
+
+- **Commands:** one `--cmd` per verification command from row `planning` / `verification`.
+- **Fix every FAIL** before any reviewer starts. A FAIL is a trailer, size, link or command defect that costs a model nothing to find.
+- **Read the last line:** `thermo: yes (<reason>)` means a file crossed the size limit and `thermo-nuclear-code-quality-review` runs; `thermo: no` leaves it to the stage and the user.
+
 ## Phase 1: Three lenses, in parallel
 
 Depth comes from **one lens per head**.
@@ -100,7 +112,7 @@ A finding in the top two bands may be a class of defect rather than an incident.
 
 ## Follow-up run
 
-After a round of fixes, the next run is a **follow-up run**: its input is the fix diff (`git diff <commit the last report names>...HEAD`) and the last report's findings, and one reviewer on the strong model carries all three lenses over it. It answers two things:
+After a round of fixes, the next run is a **follow-up run**. After one shared fix round (findings of this review and of `handlauf` together) exactly one follow-up run follows. Its input is the fix diff (`git diff <commit the last report names>...HEAD`) and the last report's findings, and one reviewer on the strong model carries all three lenses over it. It answers two things:
 
 1. **Per previous finding:** fixed or not, judged against the finding as written, with the location of the fix.
 2. **New findings in the fix diff.** Those in the top four bands count as findings. Informational ones are collected in the report and open no further fix round.

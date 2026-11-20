@@ -13,6 +13,7 @@ The trigger is a change in what the configuration depends on, not a schedule.
 
 - **End of a build phase**, after the reviews and after `retro`, before the release. The phase changes code, and code is the authority for the largest class of claims. After the reviews, because those still change code; after `retro`, because it changes the environment (`CODING_STANDARDS.md` and `.claude/checks.json` are configuration too); before the release, so the drift lands in the same report the user decides on.
 - **A decision changes**, targeted at the files that cite it.
+- **Phase trigger:** the end-of-phase run happens when `ref-check.py` reports a missing path or a decision changed in the phase; a phase with neither skips it.
 - **A reference target moves**: knowledge base restructured, rule file renamed, tool or server swapped. Nothing in the build triggers this one.
 
 **Never before a build phase**: correcting against code that is about to be rebuilt produces work the phase invalidates.
@@ -54,6 +55,8 @@ Collect the statements that **can be wrong**. The user's working instructions ("
 - **Example code in reference documents: the most dangerous kind, because it gets copied**
 
 Note the responsible authority for each; it decides where to look.
+
+**Mechanical first step:** run `python3 -I <skill-dir>/scripts/ref-check.py <file.md> ... --root <project-dir>` over the instruction files. It prints `MISSING <file>:<line> <token>` for every inline-code path that does not exist, and exits 1 on any. Each line is a finding of category A or B; the checks of phase 3 cover the rest of the claims.
 
 ## Phase 3: Verify
 
