@@ -302,7 +302,7 @@ Parallel dazu die **Sofortprüfung**: Der Hook `post-edit-check.py` führt nach 
 
 **Skills:** `handlauf`, `review-changes`, `thermo-nuclear-code-quality-review`
 
-Am Ende eines Abschnitts hängt die Tiefe von der **Stufe** des Plans ab. Immer zuerst Checkliste und Tests grün. Bei Stufe S und M folgt der **Vorlauf** `gate-precheck.py` (`review-changes/scripts/`): Er führt die Verifikationsbefehle der Projektzeile aus, prüft den Trailer jedes Commits, Dateigrößen gegen die Grenze und Verweisziele geänderter Markdown-Dateien, und meldet in der letzten Zeile `thermo: yes` oder `thermo: no`. Mechanisches kostet so kein Modell, und jeder Mangel ist behoben, bevor ein Reviewer startet.
+Am Ende eines Abschnitts hängt die Tiefe von der **Stufe** des Plans ab. Immer zuerst Checkliste und Tests grün. Bei jeder Stufe folgt der **Vorlauf** `gate-precheck.py` (`review-changes/scripts/`): Er führt die Verifikationsbefehle der Projektzeile aus, prüft den Trailer jedes Commits, Dateigrößen gegen die Grenze und Verweisziele geänderter Markdown-Dateien, und meldet in der letzten Zeile `thermo: yes` oder `thermo: no`. Mechanisches kostet so kein Modell, und jeder Mangel ist behoben, bevor ein Reviewer startet.
 
 - **Stufe S und M:** nach dem Vorlauf laufen **Handlauf** (wenn die Phase eine Oberfläche hat, vom Nutzer in eigener Sitzung) und Änderungsreview **gleichzeitig**. Eine gemeinsame Fix-Runde nimmt beide Befundlisten, danach folgt genau ein Nachtrags-Lauf. Das Wartbarkeitsreview nur bei `thermo: yes` oder auf Wunsch. **Retro** und Konfigurationsabgleich nur bei Anlass (siehe Rückfluss).
 - **Stufe L:** die volle Reihenfolge: Handlauf, Änderungsreview, Wartbarkeitsreview, Retro, Konfigurationsabgleich, Bericht.

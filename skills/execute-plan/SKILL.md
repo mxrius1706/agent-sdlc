@@ -189,15 +189,16 @@ In the order blocks finish.
 
 All waves merged and green: hand over to the phase gate. The stage in the plan decides its shape. The reviews keep their full depth on the strong model. The whole-phase review is dispatched as `gate-reviewer`.
 
+**Every stage starts the same way:** run `gate-precheck.py` (in `review-changes`'s `scripts/`) over the phase diff and fix every FAIL before any reviewer starts. It is mechanical and costs no model.
+
 **Stages S and M:**
 
-1. Run `gate-precheck.py` (in `review-changes`'s `scripts/`) over the phase diff and fix every FAIL.
-2. `review-changes` runs here while the user runs `handlauf` in a session of their own at the same time.
-3. One shared fix round takes both finding lists, bundled by pattern as in "Bundled findings". Then exactly one follow-up run.
-4. `thermo-nuclear-code-quality-review` runs when the precheck's last line says `thermo: yes` or the user asks.
-5. `retro` runs when the fix quote is above 0.3, a finding of the top two severity bands appeared, or the user asks. `config-sync` runs when `ref-check.py` (in `config-sync`'s `scripts/`) reports a missing path or a decision changed.
+1. `review-changes` runs here while the user runs `handlauf` in a session of their own at the same time.
+2. One shared fix round takes both finding lists, bundled by pattern as in "Bundled findings". Then exactly one follow-up run.
+3. `thermo-nuclear-code-quality-review` runs when the precheck's last line says `thermo: yes` or the user asks.
+4. `retro` runs when the fix quote is above 0.3, a finding of the top two severity bands appeared, or the user asks. `config-sync` runs when `ref-check.py` (in `config-sync`'s `scripts/`) reports a missing path or a decision changed.
 
-**Stage L:** the order of `plan-build` stands (gate checklist, full suite, `handlauf` where there is an interface, `review-changes`, `thermo-nuclear-code-quality-review`, report), and `thermo-nuclear-code-quality-review` always runs.
+**Stage L:** after the precheck the order of `plan-build` stands (gate checklist, full suite, `handlauf` where there is an interface, `review-changes`, `thermo-nuclear-code-quality-review`, report), and `thermo-nuclear-code-quality-review` always runs.
 
 Write the collected block-review findings into the plan file under `## Block-Befunde` (block id, severity, finding, one line each); they outlive this session there. `review-changes` gets them as input, and `retro` reads them from the plan file as one of its primary sources. `handlauf` gets none of them and is not started from this session; hand the user the branch and the surfaces to walk, and let them start it.
 
