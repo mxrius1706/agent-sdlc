@@ -302,5 +302,114 @@ class CliLintTest(unittest.TestCase):
         self.assertEqual(run("lint", p).returncode, 1)
 
 
+def blocks_table(rows):
+    """rows: Liste (Block, Dateien, Exklusiv)."""
+    head = "| Block | Tasks | Files | Wave | Exclusive |\n|---|---|---|---|---|\n"
+    return head + "".join(
+        f"| {b} | {b}1, {b}2 | {files} | {n + 1} | {ex} |\n" for n, (b, files, ex) in enumerate(rows))
+
+
+def n_files(n, prefix="src/"):
+    return ", ".join(f"{prefix}f{i}.py" for i in range(n))
+
+
+def stage_of(files, blocks=1, exclusive=False, depth=None, limits=None, schema=None, security=None):
+    rows = [(f"b{i}", files if i == 0 else f"other{i}/x.py", "no") for i in range(blocks)]
+    if exclusive:
+        rows[-1] = (rows[-1][0], rows[-1][1], "yes")
+    text = make_plan(Blocks=blocks_table(rows))
+    return pc.stage_plan(
+        text, depth, pc.parse_limits(limits),
+        pc.compile_re(schema or pc.DEFAULT_SCHEMA, "x"), pc.compile_re(security or pc.DEFAULT_SECURITY, "x"))
+
+
+class StageTest(unittest.TestCase):
+    def test_s_at_five_files(self):
+        self.assertEqual(stage_of(n_files(5))[0], "S")
+
+    def test_m_at_six_files(self):
+        self.assertEqual(stage_of(n_files(6))[0], "M")
+
+    def test_m_two_blocks_few_files(self):
+        self.assertEqual(stage_of(n_files(2), blocks=2)[0], "M")
+
+    def test_m_at_25_files(self):
+        self.assertEqual(stage_of(n_files(25))[0], "M")
+
+    def test_l_at_26_files(self):
+        self.assertEqual(stage_of(n_files(26))[0], "L")
+
+    def test_files_counted_across_blocks(self):
+        self.assertEqual(stage_of(n_files(23), blocks=3)[0], "M")
+        self.assertEqual(stage_of(n_files(23), blocks=4)[0], "L")
+
+    def test_l_exclusive_block(self):
+        stage, reasons = stage_of(n_files(1), blocks=2, exclusive=True)
+        self.assertEqual(stage, "L")
+        self.assertTrue(any("b1" in r for r in reasons))
+
+    def test_l_schema_path(self):
+        self.assertEqual(stage_of("db/migrations/001.py, a.py")[0], "L")
+        self.assertEqual(stage_of("db/init.sql")[0], "L")
+
+    def test_l_security_path(self):
+        self.assertEqual(stage_of("src/auth/login.py")[0], "L")
+
+    def test_custom_path_patterns(self):
+        self.assertEqual(stage_of("src/billing/x.py", security=r"billing")[0], "L")
+        self.assertEqual(stage_of("db/migrations/001.py", schema=r"^nomatch$")[0], "S")
+
+    def test_depth_is_lower_bound(self):
+        self.assertEqual(stage_of(n_files(1), depth="mini")[0], "S")
+        self.assertEqual(stage_of(n_files(1), depth="standard")[0], "M")
+        self.assertEqual(stage_of(n_files(1), depth="voll")[0], "L")
+        self.assertEqual(stage_of(n_files(30), depth="mini")[0], "L")
+        self.assertEqual(stage_of(n_files(10), depth="standard")[0], "M")
+
+    def test_limits_override(self):
+        self.assertEqual(stage_of(n_files(6), limits="stage_s_files=6")[0], "S")
+        self.assertEqual(stage_of(n_files(5), limits="stage_s_files=4")[0], "M")
+        self.assertEqual(stage_of(n_files(26), limits="stage_l_files=30")[0], "M")
+        self.assertEqual(stage_of(n_files(10), limits="stage_l_files=9")[0], "L")
+
+    def test_reasons_not_empty(self):
+        self.assertTrue(stage_of(n_files(3))[1])
+
+
+class CliStageTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def plan(self, text, name="p.md"):
+        p = os.path.join(self.tmp.name, name)
+        write(p, text)
+        return p
+
+    def test_first_line_one_word_exit_0(self):
+        text = make_plan(Blocks=blocks_table([("b1", n_files(3), "no")]))
+        r = run("stage", self.plan(text))
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(r.stdout.splitlines()[0], "S")
+        self.assertGreater(len(r.stdout.splitlines()), 1)
+
+    def test_deterministic(self):
+        p = self.plan(make_plan())
+        self.assertEqual(run("stage", p, "--depth", "voll").stdout, run("stage", p, "--depth", "voll").stdout)
+        self.assertEqual(run("stage", p, "--depth", "voll").stdout.splitlines()[0], "L")
+
+    def test_input_errors_exit_2(self):
+        for args in (["stage", os.path.join(self.tmp.name, "nix.md")],
+                     ["stage", self.plan("# Plan\n\nfrei\n", "frei.md")],
+                     ["stage", self.plan(make_plan()), "--limits", "files"],
+                     ["stage", self.plan(make_plan()), "--limits", "nope=1"],
+                     ["stage", self.plan(make_plan()), "--schema-paths", "("],
+                     ["stage", self.plan(make_plan()), "--depth", "riesig"]):
+            r = run(*args)
+            self.assertEqual(r.returncode, 2, args)
+            self.assertNotIn("Traceback", r.stderr)
+            self.assertEqual(len(r.stderr.strip().splitlines()), 1, args)
+
+
 if __name__ == "__main__":
     unittest.main()

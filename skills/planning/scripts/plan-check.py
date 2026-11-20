@@ -448,8 +448,48 @@ def cmd_lint(args):
     return 1 if found else 0
 
 
+def stage_plan(text, depth, limits, schema_rx, security_rx):
+    """Stufe aus dem Plan -> (S|M|L, Gruende)."""
+    lines = text.splitlines()
+    blocks = block_list(find_blocks_table(parse_tables(lines)))
+    files = sorted({f for b in blocks for f in b["files"]})
+    reasons = [f"Bloecke: {len(blocks)}, Dateien: {len(files)}"]
+    big = False
+    for b in blocks:
+        if b["exclusive"]:
+            big = True
+            reasons.append(f"Exklusiver Block: {b['id']}")
+    for f in files:
+        if schema_rx.search(f):
+            big = True
+            reasons.append(f"Datei im Schema-Muster: {f}")
+        if security_rx.search(f):
+            big = True
+            reasons.append(f"Datei im Sicherheitsmuster: {f}")
+    if len(files) > limits["stage_l_files"]:
+        big = True
+        reasons.append(f"Mehr als {limits['stage_l_files']} Dateien")
+    if big:
+        stage = "L"
+    elif len(files) <= limits["stage_s_files"] and len(blocks) == 1:
+        stage = "S"
+        reasons.append(f"Hoechstens {limits['stage_s_files']} Dateien, ein Block, kein Flag")
+    else:
+        stage = "M"
+    floor = {"mini": "S", "standard": "M", "voll": "L"}.get(depth)
+    if floor and "SML".index(floor) > "SML".index(stage):
+        stage = floor
+        reasons.append(f"Untergrenze aus Tiefe {depth}: {floor}")
+    return stage, reasons
+
+
 def cmd_stage(args):
-    raise InputError("stage ist noch nicht gebaut")
+    limits = parse_limits(args.limits)
+    schema_rx = compile_re(args.schema_paths, "--schema-paths")
+    security_rx = compile_re(args.security_paths, "--security-paths")
+    stage, reasons = stage_plan(read_text(args.plan), args.depth, limits, schema_rx, security_rx)
+    print("\n".join([stage] + reasons))
+    return 0
 
 
 def cmd_depth(args):
