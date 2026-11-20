@@ -179,7 +179,7 @@ As the last act of writing, bring the roadmap up to date: every step that has ru
 
 ### CLAUDE.local.md
 
-Anything personal to one developer (sandbox URL, preferred test data) goes in `CLAUDE.local.md` at the project root, added to `.gitignore`. The `.gitignore` also gets `.claude/run/`: run state, rules bundle and Auslauf marks belong to one working copy.
+Anything personal to one developer (sandbox URL, preferred test data) goes in `CLAUDE.local.md` at the project root, added to `.gitignore`. The `.gitignore` also gets `.claude/run/`: run state, rules bundle and Auslauf marks belong to one working copy. It also gets `__pycache__/` and the stack's build artefacts (for example `dist/`, `build/`, `node_modules/`, `*.pyc`, as the stack decisions fit), so a worktree commit never carries generated files.
 
 ### Plugins
 
