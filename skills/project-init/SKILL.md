@@ -118,6 +118,8 @@ Sections in this order. Omit any with nothing true to say; an empty section invi
 
 **Definition of done.** A checklist someone can work through: compiles, lint clean, tests green, new logic covered, no unexplained escape hatches.
 
+**Für Subagenten.** The heading is always exactly `## Für Subagenten`, because `execute-plan` copies the section verbatim into the rules bundle. A few lines, only rules a subagent needs that run without this root file: the language of code and commits, what never enters the repository, the commit trailer. Anything the bundle gets from another section stays out.
+
 **Scope discipline.** Solve the task asked, leave neighbouring code alone, ask when scope is unclear.
 
 **Two rules over everything.** Both rules from "Two rules that hold across every generated file" below, written out in full in the documentation language: "one truth, one place" and "stock with an expiry date" with its four parts. They bind every later session, not only this setup, and other skills (`stack-decisions`, `design-system`, `config-sync`) point here for them.
@@ -162,10 +164,11 @@ A rule with `paths:` enters the context only when a matching file is touched; on
 
 The work spans far more than one session, and each starts with an empty context window. Two files carry across that gap: the **roadmap** (knowledge base) says where the project stands and what comes next, `.claude/state.md` says what happened last session. **Read `references/roadmap.md` and `references/state-file.md`;** collapsing the division destroys both.
 
-An instruction to read a file first is a request; injected content is simply there. The framework ships three hooks, copied to `.claude/hooks/` and registered:
+An instruction to read a file first is a request; injected content is simply there. The framework ships four hooks, copied to `.claude/hooks/` and registered:
 
 - `session-state.py` on SessionStart: injects **both** the roadmap and the handoff, and tells the session to open by naming where things stand and offering the next step
 - `session-recap-trigger.py` on UserPromptSubmit: forces the handoff to be written on a farewell
+- `auslauf.py` on UserPromptSubmit, PostToolUse and PreToolUse with matcher `Agent`: watches how full the context is and, past the threshold in `.claude/auslauf.json` (`fenster`, `kontext`, `notbremse`), sets the Auslauf mark and refuses new subagent starts, so a running phase ends cleanly. Register all three events, in the same form as the other hooks
 - `post-edit-check.py` on PostToolUse, matcher `Edit|Write|MultiEdit`: runs the fast checks from `.claude/checks.json` after every edit and returns failures with exit code 2, so the error is seen while the edit is fresh. Write `.claude/checks.json` from the commands `stack-decisions` settled, as `{"commands": [...], "timeout_s": 60}`: fast, deterministic checks such as a type check, never the test suite. A command containing `{file}` runs once per edit with the edited file's path in its place (e.g. `npx eslint --quiet {file}`), which is how "lint the touched file" works. **Run each command once before writing the file.** One that cannot run yet (no `package.json`, no `tsconfig` in a greenfield project) stays out and is noted as `TBD` in the roadmap's step 5; otherwise every later edit, including the spec work, fails on a toolchain that does not exist yet. Without runnable commands write no file; the hook then does nothing and `retro` reports the missing guardrail.
 
 The roadmap sits outside the repository, so write its path, one line, into `.claude/roadmap-path` when installing the hook. Without it the hook injects only the handoff, a quiet failure.
@@ -176,7 +179,11 @@ As the last act of writing, bring the roadmap up to date: every step that has ru
 
 ### CLAUDE.local.md
 
-Anything personal to one developer (sandbox URL, preferred test data) goes in `CLAUDE.local.md` at the project root, added to `.gitignore`.
+Anything personal to one developer (sandbox URL, preferred test data) goes in `CLAUDE.local.md` at the project root, added to `.gitignore`. The `.gitignore` also gets `.claude/run/`: run state, rules bundle and Auslauf marks belong to one working copy.
+
+### Plugins
+
+Recommend once, in one line, to switch off plugins the project does not need through `enabledPlugins` in the project's settings; every enabled plugin loads into each session. A recommendation only: edit no user settings.
 
 ### Three ways a written file fails silently
 
