@@ -93,5 +93,49 @@ class RolesCliTest(unittest.TestCase):
             self.assertEqual(rows["block-review"][1:], ["1", "2.0", "6"])
 
 
+class GapTest(unittest.TestCase):
+    def gaps(self, lines, **kw):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = os.path.join(tmp, "t.jsonl")
+            write(p, lines)
+            return sc.limit_gaps(p, **kw)
+
+    def test_limit_gap_normal_gap_and_short_pause(self):
+        g = self.gaps([
+            line("2026-11-01T10:00:00Z", "Arbeit"),
+            line("2026-11-01T10:02:00Z", "Usage LIMIT reached, it Resets at 14:00"),
+            line("2026-11-01T12:02:00Z", "weiter"),       # 120 Min nach Limit
+            line("2026-11-01T12:03:00Z", "fertig"),
+            line("2026-11-01T12:33:00Z", "noch was"),     # 30 Min nach normaler Nachricht
+            line("2026-11-01T12:38:00Z", "kurz"),         # 5 Min: keine Luecke
+        ])
+        self.assertEqual(len(g), 2)
+        self.assertEqual(g[0]["minutes"], 120)
+        self.assertTrue(g[0]["limit"])
+        self.assertTrue(g[0]["start"].startswith("2026-11-01T10:02:00"))
+        self.assertEqual(g[1]["minutes"], 30)
+        self.assertFalse(g[1]["limit"])
+
+    def test_limit_needs_both_words(self):
+        g = self.gaps([line("2026-11-01T10:00:00Z", "limit only"), line("2026-11-01T11:00:00Z")])
+        self.assertFalse(g[0]["limit"])
+
+    def test_gap_min(self):
+        lines = [line("2026-11-01T10:00:00Z"), line("2026-11-01T10:10:00Z")]
+        self.assertEqual(self.gaps(lines), [])
+        self.assertEqual(len(self.gaps(lines, gap_min=5)), 1)
+
+    def test_gaps_cli(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [], [line("2026-11-01T10:00:00Z", "limit resets 12:00"),
+                                    line("2026-11-01T11:00:00Z")])
+            r = run("--root", tmp, "--gaps")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("LIMIT", r.stdout)
+            self.assertIn("60", r.stdout)
+            r = run("--root", tmp, "--gaps", "--gap-min", "90")
+            self.assertNotIn("LIMIT", r.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

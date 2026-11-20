@@ -121,6 +121,51 @@ def print_roles(data):
         print(f"{r:<14} {n:>6} {m:>8.1f} {o:>10,}")
 
 
+def message_text(o):
+    """Text einer Assistenten-Zeile (alle Textbloecke), sonst leer."""
+    c = (o.get("message") or {}).get("content")
+    if isinstance(c, str):
+        return c
+    return " ".join(b.get("text", "") for b in c or [] if isinstance(b, dict) and b.get("type") == "text")
+
+
+def limit_gaps(path, gap_min=20):
+    """Luecken zwischen aufeinanderfolgenden Zeitstempeln ueber gap_min Minuten.
+
+    Je Luecke ein dict: start (ISO), minutes (gerundet), limit (True, wenn die Assistenten-Nachricht
+    davor die Woerter "limit" und "resets" enthaelt, ohne Gross-/Kleinschreibung).
+    """
+    events = []
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            try:
+                o = json.loads(line)
+            except ValueError:
+                continue
+            ts = parse_ts(o["timestamp"]) if isinstance(o, dict) and o.get("timestamp") else None
+            if ts:
+                events.append((ts, message_text(o).lower() if o.get("type") == "assistant" else None))
+    events.sort(key=lambda e: e[0])
+    gaps = []
+    last_text = ""
+    for (a, text), (b, _) in zip(events, events[1:]):
+        if text is not None:
+            last_text = text
+        minutes = (b - a).total_seconds() / 60
+        if minutes > gap_min:
+            gaps.append({"start": a.isoformat(), "minutes": round(minutes),
+                         "limit": "limit" in last_text and "resets" in last_text})
+    return gaps
+
+
+def print_gaps(data, gap_min):
+    for s in data:
+        gaps = limit_gaps(s["main_path"], gap_min)
+        print(f"{s['project'][-18:]} {s['session'][:8]}: {len(gaps)} Luecken")
+        for g in gaps:
+            print(f"  {g['start']}  {g['minutes']:>5} Min{'  LIMIT' if g['limit'] else ''}")
+
+
 def short_model(models):
     if not models:
         return "-"
@@ -159,7 +204,7 @@ def collect(roots, project, session, since):
                     agents.append(a)
                 out.append({"account": os.path.basename(os.path.dirname(root)) or root,
                             "project": os.path.basename(proj), "session": sid,
-                            "main": st, "agents": agents})
+                            "main": st, "agents": agents, "main_path": main})
     out.sort(key=lambda s: s["main"]["first"] or datetime.min.replace(tzinfo=timezone.utc))
     return out
 
@@ -198,6 +243,8 @@ def main():
     ap.add_argument("--since", help="nur Sitzungen ab Datum (YYYY-MM-DD)")
     ap.add_argument("--by-agent", action="store_true", help="auch Zeile je Subagent")
     ap.add_argument("--roles", action="store_true", help="Tabelle je Rolle der Subagenten")
+    ap.add_argument("--gaps", action="store_true", help="lange Pausen je Sitzung, Limit-Luecken markiert")
+    ap.add_argument("--gap-min", type=int, default=20, help="Mindestlaenge einer Luecke in Minuten (Standard 20)")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
 
@@ -211,6 +258,9 @@ def main():
     if not data:
         print("Keine Sitzungen gefunden.", file=sys.stderr)
         sys.exit(1)
+    if a.gaps:
+        print_gaps(data, a.gap_min)
+        return
     if a.roles:
         print_roles(data)
         return
