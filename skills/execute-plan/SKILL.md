@@ -15,13 +15,13 @@ Work a released plan, wave by wave, block by block, each block in its own worktr
 
 This skill owns the model choice.
 
-**Every block subagent this skill starts runs on `model: "sonnet"`**: implementers, block reviewers, fixers. The roles `block-implementer`, `block-reviewer` and `block-fixer` carry it in their definition; a `general-purpose` fallback gets it explicitly on the `Agent` call, so no subagent inherits the coordinator's model. A stronger model for one block (delicate integrity-critical or schema logic, or a block that failed twice on the cheaper model) only after asking the user in the chat.
+**Every block subagent this skill starts runs on `model: "sonnet"`**: acceptance writers, implementers, block reviewers, fixers. The roles `acceptance-writer`, `block-implementer`, `block-reviewer` and `block-fixer` carry it in their definition; a `general-purpose` fallback gets it explicitly on the `Agent` call, so no subagent inherits the coordinator's model. A stronger model for one block (delicate integrity-critical or schema logic, or a block that failed twice on the cheaper model) only after asking the user in the chat.
 
 **The phase gate is the exception:** the role `gate-reviewer` (fallback `general-purpose` with `model: "opus"`), `review-changes` and `thermo-nuclear-code-quality-review` run on the **strong model**. They are the net under the cheaper block review; a net on the cheap model defeats the trade.
 
 ## Roles
 
-Dispatch by name: `block-implementer` (step 4), `block-reviewer` and `block-fixer` (step 5), `gate-reviewer` (step 7). A role starts without the project's `CLAUDE.md`; the rules bundle carries everything binding.
+Dispatch by name: `acceptance-writer` and `block-implementer` (step 4), `block-reviewer` and `block-fixer` (step 5), `gate-reviewer` (step 7). A role starts without the project's `CLAUDE.md`; the rules bundle carries everything binding.
 
 **Never add the `Skill` tool to a role.** It brings the whole skill catalog back into the role's context (measured: about 11,000 tokens more at start).
 
@@ -63,7 +63,9 @@ Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A h
 
 ## Step 1: Read the plan, extract blocks and waves
 
-Once, completely: context, goal, decisions, critical files, blocks, waves, tests, verification, out of scope.
+Once, completely: context, goal, decisions, critical files, blocks, waves, tests, verification, out of scope. The blocks and tasks tables carry blocks, task ids, files, waves and test targets.
+
+**Read the stage** (`S`, `M` or `L`) the plan states. It decides how each block starts (step 4). A plan without a stage goes back to `planning` for it.
 
 If the plan lists single tasks without blocks, group them per `planning` before starting and show the grouping to the user in one short list before dispatch. A released plan keeps its cut unless the user agrees to a new one.
 
@@ -101,11 +103,15 @@ The database and the dev port belong to the main checkout: a worktree starts no 
 
 Before opening the third worktree, check free memory. Three implementers plus their type checks can exhaust a 16 GB machine, and then the parallelism has cost more than it bought.
 
-## Step 4: Dispatch the implementer
+## Step 4: Dispatch the acceptance writer and the implementer
 
 **Up to three blocks at a time** with disjoint files, each with one fresh `block-implementer`, dispatched in the background so the coordinator can merge finished blocks while others run.
 
-The prompt is short, because the bundle carries the rules:
+**From stage M, each block starts with `acceptance-writer`**, a fresh one in the block's worktree. It receives the bundle path, the plan path, the block id, and the requirement ids and test targets of the block's tasks. It writes the red tests from the requirements and answers with the red run quoted. Only then the `block-implementer` starts in the same worktree, with the added instruction: make these tests green, do not edit them. A test that looks wrong is a `BLOCKED` of the implementer and goes to the coordinator.
+
+**Stage S** has no acceptance writer: the implementer writes its own tests, test first.
+
+The implementer prompt is short, because the bundle carries the rules:
 
 - **Read first:** the rules bundle path, the plan file path, the block id and its task ids. The plan's goal, decisions and out-of-scope apply; the subagent does not re-decide what the plan settled.
 - **Work order:** the tasks of the block in the plan's order, **one commit per task** (conventional message, task id in the subject). No push, no amend of foreign commits.
@@ -145,6 +151,10 @@ Answer: `APPROVED` with collected findings, or `CHANGES_REQUIRED` with the block
 
 **Blocking findings:** a fresh `block-fixer` in the same worktree, one fix commit, then the reviewer checks **only the fix diff and the findings**: each finding fixed as the reviewer wrote it, and its test shown red on the unfixed code for the finding's reason. Two rounds without green: go to the user.
 
+### Bundled findings
+
+Findings of several blocks that share a rule or a cause are one defect. Collect the blocking findings of the blocks under review, group them by rule or cause, and give each group to **one** `block-fixer` as one fix order. The order carries every finding of the group verbatim (see below). A finding without a partner is its own order.
+
 ### Fix briefs
 
 Every `block-fixer`, whether for a block finding, a red wave or a phase gate finding, gets the finding **verbatim** as its reviewer wrote it: location, damage path, violated rule. A shortened finding gets the shortened version fixed, and its test then proves the brief instead of the finding; every later gate round finds the remainder.
@@ -179,7 +189,7 @@ When the mark `.claude/run/auslauf-<session_id>` exists, the context is nearly f
 
 ## Coordinator guardrails
 
-- Subagents write the implementation; the coordinator does not.
+- Subagents write the implementation and the acceptance tests; the coordinator does not.
 - Every block subagent runs on `sonnet`; going up a model waits for the user.
 - The run state is current after every transition.
 - A released plan keeps its blocks unless the user agrees to a new cut.
