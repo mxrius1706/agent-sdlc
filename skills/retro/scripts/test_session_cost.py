@@ -93,6 +93,54 @@ class RolesCliTest(unittest.TestCase):
             self.assertEqual(rows["block-review"][1:], ["1", "2.0", "6"])
 
 
+class RoleTableTest(unittest.TestCase):
+    def test_role_table_names_and_values(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [("Build block b1", 5), ("Review Block b1", 3)])
+            data = sc.collect([tmp], None, None, None)
+            rows = {r["role"]: r for r in sc.role_table(data)}
+            self.assertEqual(rows["build"], {"role": "build", "agents": 1, "minutes": 2.0, "out": 10})
+            self.assertEqual(rows["other"]["agents"], 0)
+            self.assertEqual(len(rows), len(sc.ROLES))
+
+    def test_transcript_stamps_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [])
+            t = sc.read_transcript(os.path.join(tmp, "projekt-a", "s1.jsonl"))
+            self.assertEqual(len(t["stamps"]), 2)
+            self.assertNotIn("ts", t)
+
+
+class JsonModesTest(unittest.TestCase):
+    def test_json_with_roles(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [("Build block b1", 5)])
+            r = run("--root", tmp, "--roles", "--json")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            d = json.loads(r.stdout)
+            rows = {x["role"]: x for x in d["roles"]}
+            self.assertEqual(rows["build"]["agents"], 1)
+            self.assertEqual(rows["build"]["out"], 10)
+
+    def test_json_with_gaps(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [], [line("2026-11-01T10:00:00Z", "limit resets 12:00"),
+                                    line("2026-11-01T11:00:00Z")])
+            r = run("--root", tmp, "--gaps", "--json")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            d = json.loads(r.stdout)
+            g = d["gaps"][0]
+            self.assertEqual(g["session"], "s1")
+            self.assertEqual(g["gaps"][0]["minutes"], 60)
+            self.assertTrue(g["gaps"][0]["limit"])
+
+    def test_json_plain_still_list(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [])
+            d = json.loads(run("--root", tmp, "--json").stdout)
+            self.assertIsInstance(d, list)
+
+
 class GapTest(unittest.TestCase):
     def gaps(self, lines, **kw):
         with tempfile.TemporaryDirectory() as tmp:
@@ -119,6 +167,18 @@ class GapTest(unittest.TestCase):
     def test_limit_needs_both_words(self):
         g = self.gaps([line("2026-11-01T10:00:00Z", "limit only"), line("2026-11-01T11:00:00Z")])
         self.assertFalse(g[0]["limit"])
+
+    def test_user_line_between_limit_and_gap(self):
+        # Eine Nutzerzeile nach der Limit-Meldung aendert nichts: die Luecke bleibt eine Limit-Luecke
+        g = self.gaps([
+            line("2026-11-01T10:00:00Z", "limit reached, resets 14:00"),
+            line("2026-11-01T10:01:00Z", "weiter bitte", typ="user"),
+            line("2026-11-01T12:00:00Z", "ok"),
+        ])
+        self.assertEqual(len(g), 1)
+        self.assertEqual(g[0]["minutes"], 119)
+        self.assertTrue(g[0]["limit"])
+        self.assertTrue(g[0]["start"].startswith("2026-11-01T10:01:00"))
 
     def test_gap_min(self):
         lines = [line("2026-11-01T10:00:00Z"), line("2026-11-01T10:10:00Z")]

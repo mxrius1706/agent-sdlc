@@ -63,7 +63,7 @@ def read_transcript(path):
         t["cr"] += u.get("cache_read_input_tokens", 0) or 0
         t["out"] += u.get("output_tokens", 0) or 0
         t["models"][model] = t["models"].get(model, 0) + 1
-    t["first"], t["last"], t["ts"] = first, last, stamps
+    t["first"], t["last"], t["stamps"] = first, last, stamps
     return t
 
 
@@ -72,7 +72,7 @@ IDLE_CAP = 300  # Sekunden: laengere Pausen (z. B. Warten auf den Nutzer) zaehle
 
 def secs(t):
     """Aktive Zeit: Summe der Abstaende zwischen Nachrichten, je Abstand hoechstens IDLE_CAP."""
-    ts = sorted(t.get("ts", []))
+    ts = sorted(t.get("stamps", []))
     return sum(min((b - a).total_seconds(), IDLE_CAP) for a, b in zip(ts, ts[1:]))
 
 
@@ -106,19 +106,22 @@ def classify_role(description):
 ROLES = ["build", "block-review", "block-fix", "gate-review", "gate-fix", "research", "other"]
 
 
-def print_roles(data):
-    """Je Rolle: Anzahl Subagenten, aktive Minuten, Ausgabe-Token."""
-    rows = {r: [0, 0.0, 0] for r in ROLES}
+def role_table(data):
+    """Je Rolle ein dict: role, agents (Anzahl), minutes (aktive Minuten), out (Ausgabe-Token)."""
+    rows = {r: {"role": r, "agents": 0, "minutes": 0.0, "out": 0} for r in ROLES}
     for s in data:
         for ag in s["agents"]:
             row = rows[classify_role(ag["label"])]
-            row[0] += 1
-            row[1] += secs(ag) / 60
-            row[2] += ag["out"]
+            row["agents"] += 1
+            row["minutes"] += secs(ag) / 60
+            row["out"] += ag["out"]
+    return [rows[r] for r in ROLES]
+
+
+def print_roles(data):
     print(f"{'Rolle':<14} {'Agents':>6} {'Min':>8} {'out':>10}")
-    for r in ROLES:
-        n, m, o = rows[r]
-        print(f"{r:<14} {n:>6} {m:>8.1f} {o:>10,}")
+    for row in role_table(data):
+        print(f"{row['role']:<14} {row['agents']:>6} {row['minutes']:>8.1f} {row['out']:>10,}")
 
 
 def message_text(o):
@@ -158,9 +161,15 @@ def limit_gaps(path, gap_min=20):
     return gaps
 
 
+def gap_table(data, gap_min):
+    """Je Sitzung ein dict: project, session, gaps (Liste aus limit_gaps)."""
+    return [{"project": s["project"], "session": s["session"], "gaps": limit_gaps(s["main_path"], gap_min)}
+            for s in data]
+
+
 def print_gaps(data, gap_min):
-    for s in data:
-        gaps = limit_gaps(s["main_path"], gap_min)
+    for s in gap_table(data, gap_min):
+        gaps = s["gaps"]
         print(f"{s['project'][-18:]} {s['session'][:8]}: {len(gaps)} Luecken")
         for g in gaps:
             print(f"  {g['start']}  {g['minutes']:>5} Min{'  LIMIT' if g['limit'] else ''}")
@@ -218,19 +227,19 @@ HEAD = f"{'':<50} {'Modell':<26} {'Turns':>5} {'in':>9} {'cw':>10} {'cr':>12} {'
 
 def total(parts):
     """Summe. Die Zeitstempel werden vereinigt, parallele Subagenten zaehlen also nicht doppelt."""
-    t = {"n": 0, "in": 0, "cw": 0, "cr": 0, "out": 0, "models": {}, "first": None, "last": None, "ts": []}
+    t = {"n": 0, "in": 0, "cw": 0, "cr": 0, "out": 0, "models": {}, "first": None, "last": None, "stamps": []}
     for p in parts:
         for k in ("n", "in", "cw", "cr", "out"):
             t[k] += p[k]
         for m, c in p["models"].items():
             t["models"][m] = t["models"].get(m, 0) + c
-        t["ts"] += p.get("ts", [])
+        t["stamps"] += p.get("stamps", [])
     return t
 
 
 def to_json(s):
     def c(t):
-        return {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in t.items() if k != "ts"} | {"active_minutes": round(secs(t) / 60, 2)}
+        return {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in t.items() if k != "stamps"} | {"active_minutes": round(secs(t) / 60, 2)}
     return {"account": s["account"], "project": s["project"], "session": s["session"],
             "main": c(s["main"]), "agents": [c(a) | {"label": a["label"], "type": a["type"]} for a in s["agents"]]}
 
@@ -252,7 +261,15 @@ def main():
     since = datetime.fromisoformat(a.since).replace(tzinfo=timezone.utc) if a.since else None
     data = collect(roots, a.project, a.session, since)
     if a.json:
-        json.dump([to_json(s) for s in data], sys.stdout, indent=1, ensure_ascii=False)
+        if a.roles or a.gaps:
+            result = {}
+            if a.roles:
+                result["roles"] = role_table(data)
+            if a.gaps:
+                result["gaps"] = gap_table(data, a.gap_min)
+        else:
+            result = [to_json(s) for s in data]
+        json.dump(result, sys.stdout, indent=1, ensure_ascii=False)
         print()
         return
     if not data:
