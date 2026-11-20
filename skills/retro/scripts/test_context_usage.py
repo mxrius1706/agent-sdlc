@@ -379,5 +379,64 @@ class CliTest(unittest.TestCase):
         self.assertEqual(p.returncode, 0)
 
 
+class PackCliTest(unittest.TestCase):
+    """--pack: zweiter Bericht nur aus den Subagenten-Transkripten."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        t = self.tmp.name
+        self.proj = os.path.join(t, "projekt-a")
+        write(os.path.join(self.proj, "CLAUDE.md"), SEC_TEXT)
+        self.root = os.path.join(t, "acc", "projects")
+        folder = os.path.join(self.root, "-work-projekt-a")
+        # Hauptsitzung liest den Abschnitt, der Subagent ebenfalls
+        write_jsonl(os.path.join(folder, "s1.jsonl"), [rec_result("\n".join(SEC_LINES))])
+        sub = os.path.join(folder, "s1", "subagents")
+        write_jsonl(os.path.join(sub, "agent-1.jsonl"), [rec_result("\n".join(SEC_LINES))])
+        write(os.path.join(sub, "agent-1.meta.json"), json.dumps({"agentType": "worker"}))
+        self.out = os.path.join(t, "out", "cu.json")
+
+    def manifest(self, included):
+        path = os.path.join(self.tmp.name, "m.json")
+        write(path, json.dumps({"block": "b1", "included": included}))
+        return path
+
+    def run_cli(self, *extra):
+        cmd = [sys.executable, "-I", SCRIPT, "--root", self.root, "--project", "projekt-a",
+               "--project-dir", self.proj, "--json-out", self.out] + list(extra)
+        return subprocess.run(cmd, capture_output=True, text=True, cwd=self.tmp.name)
+
+    def test_reload_when_not_in_pack(self):
+        p = self.run_cli("--pack", self.manifest([]))
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("Nachladen und Ueberversorgung", p.stdout)
+        self.assertIn("Nachlade-Quote: 1.00", p.stdout)
+        with open(self.out, encoding="utf-8") as fh:
+            data = json.load(fh)
+        self.assertEqual(data["pack"]["reloaded"], ["CLAUDE.md#Doku"])
+        self.assertEqual(data["pack"]["quote"], "1.00")
+
+    def test_unused_when_in_pack(self):
+        p = self.run_cli("--pack", self.manifest(["CLAUDE.md#Doku"]))
+        self.assertEqual(p.returncode, 0, p.stderr)
+        with open(self.out, encoding="utf-8") as fh:
+            data = json.load(fh)
+        self.assertEqual(data["pack"]["reloaded"], [])
+        self.assertEqual(data["pack"]["unused_in_pack"], ["CLAUDE.md#Doku"])
+
+    def test_without_pack_no_key(self):
+        p = self.run_cli()
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertNotIn("Nachladen", p.stdout)
+        with open(self.out, encoding="utf-8") as fh:
+            self.assertNotIn("pack", json.load(fh))
+
+    def test_bad_manifest_exit_2(self):
+        p = self.run_cli("--pack", os.path.join(self.tmp.name, "fehlt.json"))
+        self.assertEqual(p.returncode, 2)
+        self.assertNotIn("Traceback", p.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
