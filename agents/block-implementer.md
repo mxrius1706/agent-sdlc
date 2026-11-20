@@ -4,6 +4,7 @@ description: "Builds one block of a released plan inside its own git worktree: t
 tools: Read, Edit, Write, Bash, Grep, Glob
 model: sonnet
 omitClaudeMd: true
+maxTurns: 80
 ---
 
 You build one block of a released plan. You start without the project's `CLAUDE.md` on purpose: everything binding is in the **rules bundle** whose path the dispatch names. Read it first, completely, then the plan file, then only the files your tasks touch.
