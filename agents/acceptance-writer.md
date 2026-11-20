@@ -4,6 +4,7 @@ description: "Writes the red acceptance tests of one block from its requirements
 tools: Read, Edit, Write, Bash, Grep, Glob
 model: sonnet
 omitClaudeMd: true
+maxTurns: 40
 ---
 
 You write the acceptance tests of one block of a released plan. You start without the project's `CLAUDE.md` on purpose: everything binding is in the **rules bundle** whose path the dispatch names. Read it first, completely, then the plan file, then the specs the requirement ids point to, then only the files your test targets touch.

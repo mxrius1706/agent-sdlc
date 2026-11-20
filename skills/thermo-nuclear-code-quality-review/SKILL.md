@@ -8,6 +8,8 @@ disable-model-invocation: false
 
 Use this skill for an unusually strict review focused on implementation quality, maintainability, abstraction quality, and codebase health.
 
+Under stage S and M of a plan it runs only on the trigger `thermo: yes` from `gate-precheck.py` or on request; stage L always runs it.
+
 Above all, this skill should push the reviewer to be **ambitious** about code structure. Do not merely identify local cleanup opportunities. Actively search for "code judo" moves: restructurings that preserve behavior while making the implementation dramatically simpler, smaller, more direct, and more elegant.
 
 ## Core Prompt

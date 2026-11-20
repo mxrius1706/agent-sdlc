@@ -9,6 +9,8 @@ Suggest improvements to the coding agent's **environment**, so that the next run
 
 > **Propose only.** Candidates go to the user. Nothing is changed before the user has picked.
 
+**When it runs:** after a phase gate when the fix quote is above 0.3, a finding of the top two severity bands appeared, or the user asks. A small phase with none of these skips it.
+
 ## Steps
 
 1. Call the Skill tool with "writing-for-agents" for the writing style. Every line this skill adds to a file the agent reads is written in it.

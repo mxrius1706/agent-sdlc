@@ -9,7 +9,7 @@ Work a released plan, wave by wave, block by block, each block in its own worktr
 
 **Speed comes from fewer hand-offs, not from weaker checks.** Every hand-off (worktree, dispatch, review, rebase, merge, test run) costs minutes. The phase gate at the end is the net that makes the lighter per-block review acceptable.
 
-**The coordinator's job is context and integration, not code.** Read the plan once, write the rules bundle once, open worktrees, dispatch, judge, merge. Code written here fills your context with detail that belongs in a subagent and leaves nobody with an outside view of what was produced.
+**The coordinator's job is context and integration, not code.** Read the plan once, build one context pack per block, open worktrees, dispatch, judge, merge. Code written here fills your context with detail that belongs in a subagent and leaves nobody with an outside view of what was produced.
 
 ## Models
 
@@ -21,11 +21,13 @@ This skill owns the model choice.
 
 ## Roles
 
-Dispatch by name: `acceptance-writer` and `block-implementer` (step 4), `block-reviewer` and `block-fixer` (step 5), `gate-reviewer` (step 7). A role starts without the project's `CLAUDE.md`; the rules bundle carries everything binding.
+Dispatch by name: `acceptance-writer` and `block-implementer` (step 4), `block-reviewer` and `block-fixer` (step 5), `gate-reviewer` (step 7). A role starts without the project's `CLAUDE.md`; the context pack carries everything binding.
+
+**Each role file sets `maxTurns`.** A block that hits it comes back incomplete with its commits; the coordinator handles it like a `NEEDS_CONTEXT` (step 4).
 
 **Never add the `Skill` tool to a role.** It brings the whole skill catalog back into the role's context (measured: about 11,000 tokens more at start).
 
-**A role that is not installed** (new agent files appear after a session restart) falls back to `general-purpose` with an explicit `model` and the same bundle in the prompt. Say once in the chat which role fell back.
+**A role that is not installed** (new agent files appear after a session restart) falls back to `general-purpose` with an explicit `model` and the same pack in the prompt. Say once in the chat which role fell back.
 
 `handlauf` is not dispatched from here at all (step 7).
 
@@ -52,12 +54,13 @@ The run state is the file `.claude/run/<phase>.md` in the project. Look for it f
 Phasen-Branch: <name>
 Plan: <path>
 Regelbuendel: <path>
+Paket <block>: <path>
 
 | Block | Status | Statuscode | Fix-Runden | Worktree |
 |---|---|---|---|---|
 ```
 
-Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact.
+Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact. `Regelbuendel` names the hand-written fallback (step 2); write one extra header line `Paket <block>: <path>` per block pack, never a table column.
 
 **Write the run state after every transition:** dispatch, status code received, review answer, fix round, merge, block blocked.
 
@@ -75,19 +78,22 @@ If the plan lists single tasks without blocks, group them per `planning` before 
 
 Put the blocks in a todo list, grouped by wave.
 
-## Step 2: Write the rules bundle, once per phase
+## Step 2: Build the context pack, once per block
 
-One file, `.claude/run/rules-bundle-<phase>.md`, written before the first dispatch and reused by every subagent of the phase. It lives next to the run state, so a new session finds both:
+Before the block's dispatch, from the repository root:
 
-- The binding rules from the root CLAUDE.md sections `Architecture rules`, `Security baseline`, `Testing requirements` and `Definition of done`, or their counterparts in the project's language.
-- The path rules that will match in this phase: every file in `.claude/rules/` whose `paths:` frontmatter hits one of the plan's critical files, **content copied in**, not named.
-- The **glossary terms** relevant to the phase's areas (from `GLOSSARY.md` in the knowledge base, reached through the knowledge base map in the root instructions), **content copied in**, including each term's `_Avoid_` aliases. A path in a prompt is a request; the terms themselves are simply there.
-- The sections `## Für Subagenten` of the global and the project instruction files, **copied verbatim**.
-- The verification commands and what green means.
-- The **commit trailer**, verbatim: the one the root instructions name, else the one on the latest commits of the main branch. Every subagent ends every commit with exactly this trailer; it takes precedence over any attribution line the harness suggests.
-- The worktree contract (step 4).
+```
+python3 -I <skill-dir>/scripts/context-pack.py <plan> --block <id> --root <project-dir> [--specs <file-or-folder>] [--global-claude <file>] [--trailer <line>] --out .claude/run/pack-<block>.md
+```
 
-Subagents read the bundle and the plan file themselves; the coordinator passes paths, block id and task ids. Record the bundle path in the run state header.
+The manifest lands beside it as `.claude/run/pack-<block>.md.manifest.json`. The pack holds what the block's files and requirement ids touch: the `## Für Subagenten` sections, area rules, matching path rules, spec sections, glossary terms, the plan's decisions, the verification commands, the commit trailer and the worktree contract. Pass `--trailer` when the root instructions name one.
+
+- **Read the manifest** once: the `excluded` list shows what exists in the sources and did not match, `notes` names what is absent (no glossary, no trailer). Close a gap with a corrected input and a new run, or with a line in the brief.
+- **Pass only the pack path** to every subagent of the block. Record it in the run state header as `Paket <block>: <path>`.
+- **Exit 3** means the pack exceeds `--max-chars`. The script never cuts; split the block (the user agrees to the new cut), then build the packs again.
+- **Exit 2** means a missing plan or an unknown block id; fix the input.
+
+**Fallback:** only when the script cannot run, write the bundle by hand into `.claude/run/rules-bundle-<phase>.md` with the same sections and record it as `Regelbuendel`.
 
 ## Step 3: Open the worktree
 
@@ -107,13 +113,13 @@ Before opening the third worktree, check free memory. Three implementers plus th
 
 **Up to three blocks at a time** with disjoint files, each with one fresh `block-implementer`, dispatched in the background so the coordinator can merge finished blocks while others run.
 
-**From stage M, each block starts with `acceptance-writer`**, a fresh one in the block's worktree. It receives the bundle path, the plan path, the block id, and the requirement ids and test targets of the block's tasks. It writes the red tests from the requirements and answers with the red run quoted. Only then the `block-implementer` starts in the same worktree, with the added instruction: make these tests green, do not edit them. A test that looks wrong is a `BLOCKED` of the implementer and goes to the coordinator.
+**From stage M, each block starts with `acceptance-writer`**, a fresh one in the block's worktree. It receives the pack path, the plan path, the block id, and the requirement ids and test targets of the block's tasks. It writes the red tests from the requirements and answers with the red run quoted. Only then the `block-implementer` starts in the same worktree, with the added instruction: make these tests green, do not edit them. A test that looks wrong is a `BLOCKED` of the implementer and goes to the coordinator.
 
 **Stage S** has no acceptance writer: the implementer writes its own tests, test first.
 
-The implementer prompt is short, because the bundle carries the rules:
+The implementer prompt is short, because the pack carries the rules:
 
-- **Read first:** the rules bundle path, the plan file path, the block id and its task ids. The plan's goal, decisions and out-of-scope apply; the subagent does not re-decide what the plan settled.
+- **Read first:** the pack path, the plan file path, the block id and its task ids. The plan's goal, decisions and out-of-scope apply; the subagent does not re-decide what the plan settled.
 - **Work order:** the tasks of the block in the plan's order, **one commit per task** (conventional message, task id in the subject). No push, no amend of foreign commits.
 - **Checks inside the worktree:** type check and the tests of the touched files after each task. The full suite is the coordinator's job.
 - **Worktree contract:** all paths inside the worktree; the main checkout is off limits.
@@ -130,6 +136,8 @@ BLOCKED: <the blocker>
 
 **DONE** goes to step 5. First check that the block branch carries the expected commits and that the main checkout is still clean. A dirty main checkout means the subagent left its worktree; revert with the user's knowledge first.
 
+**Stall rule:** a running block with no new commit for 20 minutes is checked: look at its worktree, then stop it and re-dispatch with a changed input, or go to the user.
+
 **DONE_WITH_CONCERNS**: a correctness or scope concern is resolved before the review; a plain observation is passed on to the reviewer.
 
 **NEEDS_CONTEXT**: supply what is missing, dispatch a new subagent into the same worktree. Commits already made stay.
@@ -140,10 +148,10 @@ After a block, change an input before re-dispatching; repeating unchanged is a l
 
 ## Step 5: One combined review per block
 
-A fresh `block-reviewer` reads the block's diff (`git diff <phase-branch>...HEAD` in the worktree), the plan's text for the block's tasks, the rules bundle and, if the repo has one, `CODING_STANDARDS.md` (judgement rules that only reviewers read; implementers never get it). Names in the diff are checked against the glossary terms in the bundle. It answers two questions in one pass, in this order:
+A fresh `block-reviewer` reads the block's diff (`git diff <phase-branch>...HEAD` in the worktree), the plan's text for the block's tasks, the context pack and, if the repo has one, `CODING_STANDARDS.md` (judgement rules that only reviewers read; implementers never get it). Names in the diff are checked against the glossary terms in the pack. It answers two questions in one pass, in this order:
 
 1. **Spec:** Is every task of the block implemented as the plan says? Is anything built the plan did **not** ask for? Do paths, names, types, constraints match? Is the written thing visible where the plan promises it?
-2. **Quality:** the project's checklist from the bundle, security invariants by name from the root section `Security baseline` or its counterpart in the project's language (authentication, authorisation, CSRF, rate limit, validation, audit trail, integrity chains, no hardcoded secrets), tests for new logic including failure cases.
+2. **Quality:** the project's checklist from the pack, security invariants by name from the root section `Security baseline` or its counterpart in the project's language (authentication, authorisation, CSRF, rate limit, validation, audit trail, integrity chains, no hardcoded secrets), tests for new logic including failure cases.
 
 Severity in four steps: exploitable or data-destroying; breaks a binding project rule or a plan decision (including scope creep); weakens a defence or leaves a test gap; cosmetic. **The first two block. The rest are collected** for the phase gate.
 
@@ -169,15 +177,28 @@ In the order blocks finish.
 
 1. **Rebase** the block branch onto the current phase head inside the worktree. Clean rebase with disjoint file sets: the review holds. Conflict: a fresh subagent resolves it, the reviewer checks only the resolved files.
 2. **Type check** in the worktree after the rebase.
-3. **Merge** from the main checkout: `git checkout <phase-branch> && git merge --no-ff <block-branch>`. Before it, check that every block commit ends in the bundle's trailer (`git log --format=%B <phase-branch>..<block-branch>`); a missing or different trailer is corrected on the block branch first. The merge commit records the block as a reviewed unit.
+3. **Merge** from the main checkout: `git checkout <phase-branch> && git merge --no-ff <block-branch>`. Before it, check that every block commit ends in the pack's trailer (`git log --format=%B <phase-branch>..<block-branch>`); a missing or different trailer is corrected on the block branch first. The merge commit records the block as a reviewed unit.
 4. **Remove** worktree and branch (see the reference), branch with `-d`: one that refuses to delete has unmerged commits, and that is information.
 5. **Schema changed?** Apply the migration to the dev database and re-run the code generation from the main checkout before any further worktree opens; a worktree from a stale phase head gets a stale client and fails in confusing ways.
 
 **When every block of a wave is merged**, run the full test suite and the type check **once** on the phase branch in the main checkout. Red: find the block that broke it (`git log --merges`), dispatch a fixer on a short-lived fix branch, same single review, merge, re-run. Only a green wave opens the next one.
 
+**Budget:** the phase budget is the row `budget` in the plan's Decisions table. After each wave run `session-cost.py` (in `retro`'s `scripts/`) for the phase's sessions and tell the user in the chat when the budget is passed.
+
 ## Step 7: Close the plan
 
-All waves merged and green: hand over to the phase gate, which runs per the ritual in `plan-build` (gate checklist, full suite, `handlauf` where there is an interface, `review-changes`, `thermo-nuclear-code-quality-review`, report). The reviews keep their full depth on the strong model. The whole-phase review is dispatched as `gate-reviewer`.
+All waves merged and green: hand over to the phase gate. The stage in the plan decides its shape. The reviews keep their full depth on the strong model. The whole-phase review is dispatched as `gate-reviewer`.
+
+**Every stage starts the same way:** run `gate-precheck.py` (in `review-changes`'s `scripts/`) over the phase diff and fix every FAIL before any reviewer starts. It is mechanical and costs no model.
+
+**Stages S and M:**
+
+1. `review-changes` runs here while the user runs `handlauf` in a session of their own at the same time.
+2. One shared fix round takes both finding lists, bundled by pattern as in "Bundled findings". Then exactly one follow-up run.
+3. `thermo-nuclear-code-quality-review` runs when the precheck's last line says `thermo: yes` or the user asks.
+4. `retro` runs when the fix quote is above 0.3, a finding of the top two severity bands appeared, or the user asks. `config-sync` runs when `ref-check.py` (in `config-sync`'s `scripts/`) reports a missing path or a decision changed.
+
+**Stage L:** after the precheck the order of `plan-build` stands (gate checklist, full suite, `handlauf` where there is an interface, `review-changes`, `thermo-nuclear-code-quality-review`, report), and `thermo-nuclear-code-quality-review` always runs.
 
 Write the collected block-review findings into the plan file under `## Block-Befunde` (block id, severity, finding, one line each); they outlive this session there. `review-changes` gets them as input, and `retro` reads them from the plan file as one of its primary sources. `handlauf` gets none of them and is not started from this session; hand the user the branch and the surfaces to walk, and let them start it.
 
@@ -189,6 +210,7 @@ When the mark `.claude/run/auslauf-<session_id>` exists, the context is nearly f
 
 ## Coordinator guardrails
 
+- Every subagent of a block gets the block's pack path and nothing hand-copied.
 - Subagents write the implementation and the acceptance tests; the coordinator does not.
 - Every block subagent runs on `sonnet`; going up a model waits for the user.
 - The run state is current after every transition.
