@@ -278,26 +278,37 @@ def evidence_tier(partial, ident_later):
 
 def aggregate(sections, scans):
     """Sections plus Scan-Ergebnisse -> Zeilen je Abschnitt, geladene zuerst (nach Ballast)."""
+    # scans: Scan-Dicts oder Paare (Empfaenger, Scan). Ohne Empfaenger gilt "sub".
+    # Injiziert ist immer geladen und sagt nichts ueber Nutzung: es zaehlt nicht
+    # zum Ballast, sondern wird nach Hauptsitzung und Subagent getrennt gezeigt.
+    scans = [s if isinstance(s, tuple) else ("sub", s) for s in scans]
     rows = []
     for sec in sections:
         sid = sec["id"]
         ch = {c: 0 for c in CHANNELS}
         partial = 0
         ident = False
-        for sc in scans:
+        inj_main = inj_sub = 0
+        for who, sc in scans:
             e = sc.get(sid)
             if not e:
                 continue
             for c in CHANNELS:
                 ch[c] += e[c]["full"]
                 partial += e[c]["partial"]
+            if who == "main":
+                inj_main += e["injiziert"]["full"]
+            else:
+                inj_sub += e["injiziert"]["full"]
             ident = ident or e["ident_later"]
         loads = sum(ch.values())
+        deliberate = ch["gelesen"] + ch["kopiert"]
         tier = evidence_tier(partial, ident) if loads or partial else None
         rows.append({"id": sid, "alias": sec.get("alias"), "loads": loads, "partial": partial,
                      "channels": ch, "chars": sec["chars"], "tier": tier,
-                     "ballast": sec["chars"] * loads if tier == "C" else 0})
-    rows.sort(key=lambda r: (r["tier"] is None, -r["ballast"], -r["loads"], -r["partial"], r["id"]))
+                     "inj_main": inj_main, "inj_sub": inj_sub, "sub_chars": sec["chars"] * inj_sub,
+                     "ballast": sec["chars"] * deliberate if tier == "C" else 0})
+    rows.sort(key=lambda r: (r["tier"] is None, -r["ballast"], -r["sub_chars"], -r["loads"], -r["partial"], r["id"]))
     return rows
 
 
@@ -375,12 +386,12 @@ def find_sessions(roots, project, since):
 
 def fmt_table(rows, top):
     shown = [r for r in rows if r["tier"] is not None][:top]
-    lines = ["| Abschnitt | Ladungen | Teil | gelesen | injiziert | kopiert | Zeichen | Stufe | Ballast |",
-             "|---|---|---|---|---|---|---|---|---|"]
+    lines = ["| Abschnitt | Teil | gelesen | kopiert | inj. Haupt | inj. Sub | Zeichen | Stufe | Ballast | Sub-Zeichen |",
+             "|---|---|---|---|---|---|---|---|---|---|"]
     for r in shown:
         c = r["channels"]
-        lines.append(f"| {r['id']} | {r['loads']} | {r['partial']} | {c['gelesen']} | {c['injiziert']} | "
-                     f"{c['kopiert']} | {r['chars']} | {r['tier']} | {r['ballast']} |")
+        lines.append(f"| {r['id']} | {r['partial']} | {c['gelesen']} | {c['kopiert']} | {r['inj_main']} | "
+                     f"{r['inj_sub']} | {r['chars']} | {r['tier']} | {r['ballast']} | {r['sub_chars']} |")
     return "\n".join(lines)
 
 
@@ -420,11 +431,11 @@ def main():
     pairs = []
     n_subs = 0
     for s in sessions:
-        scans.append(scan_transcript(s["main"], sections, index))
+        scans.append(("main", scan_transcript(s["main"], sections, index)))
         pairs.append(("main", start_load(s["main"])))
         for sub, typ in s["subs"]:
             n_subs += 1
-            scans.append(scan_transcript(sub, sections, index))
+            scans.append((typ, scan_transcript(sub, sections, index)))
             pairs.append((typ, start_load(sub)))
     rows = aggregate(sections, scans)
     start = startlast_by_type(pairs)

@@ -243,7 +243,24 @@ class AggregateTest(unittest.TestCase):
         self.assertEqual((row["id"], row["loads"], row["partial"]), (sid, 3, 0))
         self.assertEqual(row["channels"], {"gelesen": 2, "injiziert": 1, "kopiert": 0})
         self.assertEqual(row["tier"], "C")
-        self.assertEqual(row["ballast"], secs[0]["chars"] * 3)
+        self.assertEqual(row["ballast"], secs[0]["chars"] * 2)  # injiziert zaehlt nicht
+
+    def test_injected_split_by_recipient(self):
+        secs = one_section()
+        sid = secs[0]["id"]
+        rows = cu.aggregate(secs, [("main", {sid: scan_entry("injiziert", full=1)}),
+                                   ("general-purpose", {sid: scan_entry("injiziert", full=1)}),
+                                   ("web-fetch", {sid: scan_entry("injiziert", full=1)})])
+        row = rows[0]
+        self.assertEqual((row["inj_main"], row["inj_sub"]), (1, 2))
+        self.assertEqual(row["ballast"], 0)
+        self.assertEqual(row["sub_chars"], secs[0]["chars"] * 2)  # Zeichen, die Subagenten tragen
+
+    def test_plain_scans_still_accepted(self):
+        secs = one_section()
+        sid = secs[0]["id"]
+        rows = cu.aggregate(secs, [{sid: scan_entry("injiziert", full=1)}])
+        self.assertEqual((rows[0]["inj_main"], rows[0]["inj_sub"]), (0, 1))
 
     def test_tier_b_has_no_ballast(self):
         secs = one_section()
