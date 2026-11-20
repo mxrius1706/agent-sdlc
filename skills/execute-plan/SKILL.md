@@ -23,6 +23,8 @@ This skill owns the model choice.
 
 Dispatch by name: `block-implementer` (step 4), `block-reviewer` and `block-fixer` (step 5), `gate-reviewer` (step 7). A role starts without the project's `CLAUDE.md`; the rules bundle carries everything binding.
 
+**Never add the `Skill` tool to a role.** It brings the whole skill catalog back into the role's context (measured: about 11,000 tokens more at start).
+
 **A role that is not installed** (new agent files appear after a session restart) falls back to `general-purpose` with an explicit `model` and the same bundle in the prompt. Say once in the chat which role fell back.
 
 `handlauf` is not dispatched from here at all (step 7).
