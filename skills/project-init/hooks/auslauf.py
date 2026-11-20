@@ -24,6 +24,32 @@ passiert beim Verweigern nichts.
 
 Subagenten (Eingabe enthaelt `agent_id`) werden nie angefasst.
 
+Registrierung in `.claude/settings.json`:
+
+    "hooks": {
+      "UserPromptSubmit": [
+        { "hooks": [ {
+            "type": "command",
+            "command": "python3 \\"$CLAUDE_PROJECT_DIR/.claude/hooks/auslauf.py\\" || true",
+            "shell": "bash"
+        } ] }
+      ],
+      "PostToolUse": [
+        { "hooks": [ {
+            "type": "command",
+            "command": "python3 \\"$CLAUDE_PROJECT_DIR/.claude/hooks/auslauf.py\\" || true",
+            "shell": "bash"
+        } ] }
+      ],
+      "PreToolUse": [
+        { "matcher": "Agent", "hooks": [ {
+            "type": "command",
+            "command": "python3 \\"$CLAUDE_PROJECT_DIR/.claude/hooks/auslauf.py\\" || true",
+            "shell": "bash"
+        } ] }
+      ]
+    }
+
 Das `|| true` ist Absicht: ein Fehler hier darf keine Sitzung blockieren.
 """
 
