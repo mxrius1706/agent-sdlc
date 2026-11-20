@@ -15,6 +15,11 @@
 CLAUDE.local.md
 .claude/cache/
 .claude/worktrees/
+.claude/run/
+.worktrees/
+
+# Python
+__pycache__/
 
 # OS / Editor
 node_modules/
