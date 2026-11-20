@@ -20,6 +20,8 @@ Suggest improvements to the coding agent's **environment**, so that the next run
    - the findings of the block reviews, in the phase's plan file under `## Block-Befunde`
    - the numbers of the phase: `python3 -I scripts/session-cost.py --project <name> --roles --since <day> --until <day>` (minutes and tokens per role, fix quote) and `scripts/context-usage.py --project-dir . --top 15` (which sections of the instruction files and the vault were loaded how often, and the start load per agent type)
 
+   The **fix quote** from `session-cost.py --roles` is a mandatory number: it opens the report, with the value of the phase before it for comparison.
+
    The reports say what went wrong; the session says why it was hard; the numbers say what it cost.
 
 3. **Look for candidates** in these categories. Each has a trigger; without the trigger, skip the category.
@@ -33,22 +35,31 @@ Suggest improvements to the coding agent's **environment**, so that the next run
    - **Context ballast.** Sections loaded often with evidence tier C (loaded, no sign of use) and agent types with a large start load. _Use when_ an instruction file is large or the start load stood out. Counts only point at candidates: a section is cut only after one run without it shows no loss.
    - **Information access.** Was a crucial piece of information out of the agent's reach? Dev server logs, read access to a service, a decision record that was not found. _Use when_ the agent guessed at something it could have known. When a skill lacked something specific to this project, the candidate is a source in the project plus a row in the root CLAUDE.md section `Project references`, never a change to the global skill and never a project copy of it.
 
-4. **Classify every coding-standards candidate. This is mandatory.**
+4. **Climb the cause ladder for every finding.** Ask where it was avoidable earliest, and propose the change at that place:
+   1. **Spec:** a requirement was missing, vague or contradictory.
+   2. **Plan:** blocks overlapped, a task had no test target, a requirement had no task.
+   3. **Order:** the dispatch lacked context, or the tests were written after the code instead of before it.
+   4. **Tool:** a script or check could have caught it mechanically.
+   5. **Review:** only this rung is left.
+
+   A reviewer rule is proposed only when no earlier rung helps. The finding's source line stays attached to the candidate.
+
+5. **Classify every coding-standards candidate. This is mandatory.**
    - **Mechanical** (a fixed syntactic pattern, a banned API, an import shape, a file location, a naming pattern): a **check**, full stop. A lint rule in the project's own linter, an entry in `.claude/checks.json` (fast, runs after every edit), a pre-commit hook, or a CI job; whichever the project's language and existing guardrails make cheapest. Default to building the check over writing the rule.
    - **Judgement** (consistency across files, "fits the surrounding style", anything no tool can decide): a rule in **`CODING_STANDARDS.md`** in the repo. Reviewers read it; implementers do not.
 
    The reason for the split is context pressure. The implementing agent explores, writes and debugs, so every extra rule competes with the work and is the first thing to slip. The reviewer receives a diff and has the least pressure of anyone in the flow, so the standards belong to the reviewer. The always-loaded root file stays small, and a rule that a tool can enforce does not need to be remembered at all.
 
-5. **Count repeats.** "Seen twice is a pattern."
+6. **Count repeats.** "Seen twice is a pattern."
    - A judgement-type mistake seen for the first time is not yet a rule. Note it in `CODING_STANDARDS.md` under `## Beobachtet (einmal)`: the generalised class of defect without file paths, plus the date or phase. Create the file and the section if they do not exist.
    - If the mistake is already there, this is the second occurrence: it moves out of that section into a rule in the body of the file, worded as something a reviewer can check against a diff.
    - Mechanical mistakes do not wait for a second occurrence. A check is cheap to add and silent when right.
 
-6. **A project with no guardrail is a finding of its own.** If there is no `.claude/checks.json`, no pre-commit hook and no CI job running lint, types or tests, say so as the first candidate, with the cheapest option for this stack. An unchecked project is a standing missed opportunity, not a neutral default. The commands come from the testing decision in the stack decisions.
+7. **A project with no guardrail is a finding of its own.** If there is no `.claude/checks.json`, no pre-commit hook and no CI job running lint, types or tests, say so as the first candidate, with the cheapest option for this stack. An unchecked project is a standing missed opportunity, not a neutral default. The commands come from the testing decision in the stack decisions.
 
-7. **Present the candidates**, most severe first. Per candidate:
+8. **Present the candidates**, most severe first. Per candidate:
    - **Where it came from:** the concrete moment in the session or the report line. A candidate without one is a guess and is dropped.
-   - **Category and classification:** check or standard.
+   - **Category, rung of the cause ladder, and classification:** check or standard.
    - **The proposed change:** the exact file and the exact text or command.
 
    Then ask which to apply. Apply only those, one file at a time, and show what changed. Changes to `.claude/checks.json` are run once to see that the command works and is fast.
