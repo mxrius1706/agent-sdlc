@@ -48,5 +48,25 @@ class RunChecksUnitTest(unittest.TestCase):
         self.assertTrue(res[0][1].startswith("cmd"))
 
 
+class LineCountUnitTest(unittest.TestCase):
+    def test_count_lines(self):
+        gp = load()
+        self.assertEqual(gp.count_lines(b""), 0)
+        self.assertEqual(gp.count_lines(b"a\nb\n"), 2)
+        self.assertEqual(gp.count_lines(b"a\nb"), 2)
+
+    def test_binary_is_not_counted(self):
+        gp = load()
+        self.assertIsNone(gp.count_lines(b"ab\x00cd\n" * 10))
+
+
+class LinkExtractUnitTest(unittest.TestCase):
+    def test_links_with_line_numbers_skip_fences_and_urls(self):
+        gp = load()
+        text = ("[a](x.md)\n```\n[b](y.md)\n```\n"
+                "[c](https://example.invalid)\n[d](#anker)\n[e](z.md#t)\n")
+        self.assertEqual(gp.extract_links(text), [(1, "x.md"), (7, "z.md")])
+
+
 if __name__ == "__main__":
     unittest.main()
