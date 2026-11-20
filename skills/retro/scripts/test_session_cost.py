@@ -66,6 +66,84 @@ class RoleTest(unittest.TestCase):
         self.assertEqual(sc.classify_role("Read and build"), "build")
 
 
+class GenericTermsTest(unittest.TestCase):
+    CASES = {
+        "gate-review": ["Phase review plan", "Thermo review Datei", "Gate-Review nach Phase 2", "Phase 3 nachpruefen"],
+        "gate-fix": ["Fix Phase findings", "Gate-Fix Runde"],
+        "spec": ["Konsistenz Specs pruefen", "Spec-Rueckfluss", "Backflow der Hinweise", "ADR schreiben", "Review Konsistenz"],
+        "block-review": ["Review der Aenderung", "Re-Review", "Fix-Review", "Nachpruefung Diff", "Folge-Review", "Fix-Diff pruefen",
+                         "Sammelbefunde pruefen"],
+        "block-fix": ["Fixer b2", "Fix-Block 3", "Fixes einarbeiten", "Fix-Runde", "Findings abarbeiten"],
+        "build": ["Implement Parser", "Implementieren der Ausgabe", "Refactor Modul", "Write Skript", "Umbau Ausgabe"],
+        "research": ["Suche nach Aufrufern", "Search usages", "Fehlersuche Ausgabe", "Erkunde Ordner"],
+        "other": ["Kaffee kochen", "Inspect something", "Plan schreiben"],
+    }
+
+    def test_table(self):
+        for role, labels in self.CASES.items():
+            for lab in labels:
+                self.assertEqual(sc.classify_role(lab), role, lab)
+
+    def test_other_share_low(self):
+        labels = [l for ls in self.CASES.values() for l in ls if l not in ("Kaffee kochen", "Inspect something", "Plan schreiben")]
+        other = [l for l in labels if sc.classify_role(l) == "other"]
+        self.assertEqual(other, [])
+
+    def test_spec_not_matching_inside_words(self):
+        self.assertNotEqual(sc.classify_role("Inspect specific thing"), "spec")
+
+
+class FixQuoteTest(unittest.TestCase):
+    def test_fix_quote_value_and_rounding(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [("Build block b1", 1), ("Build block b2", 1), ("Build block b3", 1),
+                                ("Fix findings b1", 1), ("Fix gate findings", 1)])
+            data = sc.collect([tmp], None, None, None)
+            self.assertEqual(sc.fix_quote(sc.role_table(data)), 0.67)  # 4 Min / 6 Min
+
+    def test_fix_quote_without_build(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [("Fix findings b1", 1)])
+            data = sc.collect([tmp], None, None, None)
+            self.assertIsNone(sc.fix_quote(sc.role_table(data)))
+
+    def test_cli_row_and_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [("Build block b1", 1), ("Fix findings b1", 1)])
+            r = run("--root", tmp, "--roles")
+            self.assertIn("Fix-Quote 1.00", r.stdout)
+            d = json.loads(run("--root", tmp, "--roles", "--json").stdout)
+            self.assertEqual(d["fix_quote"], 1.0)
+
+    def test_cli_row_without_build(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [("Fix findings b1", 1)])
+            self.assertIn("Fix-Quote -", run("--root", tmp, "--roles").stdout)
+            d = json.loads(run("--root", tmp, "--roles", "--json").stdout)
+            self.assertIsNone(d["fix_quote"])
+
+
+class PeriodTest(unittest.TestCase):
+    def two_sessions(self, tmp):
+        make_projects(tmp, [("Build block b1", 1)])
+        proj = os.path.join(tmp, "projekt-a")
+        write(os.path.join(proj, "s2.jsonl"), [line("2026-11-10T10:00:00Z"), line("2026-11-10T10:01:00Z")])
+
+    def sessions(self, *args):
+        d = json.loads(run("--root", self.tmp, "--json", *args).stdout)
+        return sorted(x["session"] for x in d)
+
+    def test_since_until(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.tmp = tmp
+            self.two_sessions(tmp)
+            self.assertEqual(self.sessions(), ["s1", "s2"])
+            self.assertEqual(self.sessions("--until", "2026-11-05"), ["s1"])
+            self.assertEqual(self.sessions("--since", "2026-11-05"), ["s2"])
+            self.assertEqual(self.sessions("--until", "2026-11-10"), ["s1", "s2"])  # Endtag eingeschlossen
+            self.assertEqual(self.sessions("--since", "2026-11-02", "--until", "2026-11-09"), [])
+
+
 def make_projects(tmp, agents, main_lines=None):
     proj = os.path.join(tmp, "projekt-a")
     write(os.path.join(proj, "s1.jsonl"), main_lines or [line("2026-11-01T10:00:00Z"), line("2026-11-01T10:01:00Z")])

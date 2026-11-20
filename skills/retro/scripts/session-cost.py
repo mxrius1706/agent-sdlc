@@ -18,7 +18,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 def parse_ts(s):
@@ -77,33 +77,42 @@ def secs(t):
 
 
 # Reihenfolge der Rollenregeln, vom spezifischsten zum allgemeinsten, erste Treffer-Regel gewinnt:
-#  1. gate-review  (phase review, oder gate/thermo plus review) - vor block-review, weil "block" auch im Gate-Text vorkommt
-#  2. gate-fix     (fix plus gate/thermo/umbau)                 - vor block-fix, sonst gewinnt eine Block-Id im Text
-#  3. block-review (review plus block)
-#  4. block-fix    (fix plus Block-Id wie b3)                   - vor build, weil "Fix build b3" ein Fix ist
-#  5. build        (build oder bau)
-#  6. research     (read, fetch, research, lese)
-#  7. other
+#  1. gate-review  (gate/thermo/phase plus Pruefwort)           - vor block-review, weil "block" auch im Gate-Text vorkommt
+#  2. gate-fix     (fix plus gate/thermo/umbau/phase)           - vor block-fix, sonst gewinnt eine Block-Id im Text
+#  3. spec         (konsistenz, spec, backflow, rueckfluss, adr) - vor block-review, "Review Konsistenz" ist Spec-Arbeit
+#  4. block-review (Pruefwort: review, nachpruef, diff, sammelbefund) - vor block-fix, "Fix-Review" ist ein Review
+#  5. block-fix    (fix, finding, befund)                       - vor build, weil "Fix build b3" ein Fix ist
+#  6. build        (build, bau, implement, refactor, write)
+#  7. research     (read, fetch, research, lese, suche, search, erkunde)
+#  8. other
+# Pruefwoerter: "review" deckt Re-Review, Fix-Review und Folge-Review mit ab.
+REVIEW_WORDS = r"review|nachpruef|\bdiffs?\b|sammelbefund"
+SPEC_WORDS = r"konsistenz|\bspecs?\b|backflow|rueckfluss|\badr\b"
+
+
 def classify_role(description):
     """Rolle eines Subagenten aus seiner Beschreibung (Stichwortregeln, ohne Gross-/Kleinschreibung)."""
     d = (description or "").lower()
     has = lambda *words: any(w in d for w in words)
-    if "phase review" in d or (has("gate", "thermo") and "review" in d):
+    reviewing = re.search(REVIEW_WORDS, d)
+    if has("gate", "thermo", "phase") and reviewing:
         return "gate-review"
-    if "fix" in d and has("gate", "thermo", "umbau"):
+    if "fix" in d and has("gate", "thermo", "umbau", "phase"):
         return "gate-fix"
-    if "review" in d and "block" in d:
+    if re.search(SPEC_WORDS, d):
+        return "spec"
+    if reviewing:
         return "block-review"
-    if "fix" in d and re.search(r"\bb\d+\b", d):
+    if has("fix", "finding", "befund"):
         return "block-fix"
-    if has("build", "bau"):
+    if has("build", "bau", "implement", "refactor") or re.search(r"\bwrite\b", d):
         return "build"
-    if has("read", "fetch", "research", "lese"):
+    if has("read", "fetch", "research", "lese", "suche", "search", "erkunde"):
         return "research"
     return "other"
 
 
-ROLES = ["build", "block-review", "block-fix", "gate-review", "gate-fix", "research", "other"]
+ROLES = ["build", "block-review", "block-fix", "gate-review", "gate-fix", "spec", "research", "other"]
 
 
 def role_table(data):
@@ -118,10 +127,21 @@ def role_table(data):
     return [rows[r] for r in ROLES]
 
 
+def fix_quote(rows):
+    """Minuten der Fix-Rollen geteilt durch Minuten der Rolle build, auf 2 Stellen; None ohne build-Zeit."""
+    by = {r["role"]: r["minutes"] for r in rows}
+    if not by.get("build"):
+        return None
+    return round((by["block-fix"] + by["gate-fix"]) / by["build"], 2)
+
+
 def print_roles(data):
+    rows = role_table(data)
     print(f"{'Rolle':<14} {'Agents':>6} {'Min':>8} {'out':>10}")
-    for row in role_table(data):
+    for row in rows:
         print(f"{row['role']:<14} {row['agents']:>6} {row['minutes']:>8.1f} {row['out']:>10,}")
+    q = fix_quote(rows)
+    print(f"Fix-Quote {q:.2f}" if q is not None else "Fix-Quote -")
 
 
 def message_text(o):
@@ -181,7 +201,7 @@ def short_model(models):
     return ",".join(m.replace("claude-", "") for m in sorted(models, key=models.get, reverse=True)[:2])
 
 
-def collect(roots, project, session, since):
+def collect(roots, project, session, since, until=None):
     out = []
     seen_roots = set()
     for root in roots:
@@ -198,6 +218,8 @@ def collect(roots, project, session, since):
                     continue
                 st = read_transcript(main)
                 if since and (not st["first"] or st["first"] < since):
+                    continue
+                if until and st["first"] and st["first"] >= until:
                     continue
                 agents = []
                 for sub in sorted(glob.glob(os.path.join(proj, sid, "subagents", "agent-*.jsonl"))):
@@ -250,6 +272,7 @@ def main():
     ap.add_argument("--project", help="Teil des Projektordner-Namens")
     ap.add_argument("--session", help="Sitzungs-ID oder Anfang davon")
     ap.add_argument("--since", help="nur Sitzungen ab Datum (YYYY-MM-DD)")
+    ap.add_argument("--until", help="nur Sitzungen bis Datum (YYYY-MM-DD), der Endtag zaehlt mit")
     ap.add_argument("--by-agent", action="store_true", help="auch Zeile je Subagent")
     ap.add_argument("--roles", action="store_true", help="Tabelle je Rolle der Subagenten")
     ap.add_argument("--gaps", action="store_true", help="lange Pausen je Sitzung, Limit-Luecken markiert")
@@ -259,12 +282,14 @@ def main():
 
     roots = a.root or sorted(glob.glob(os.path.expanduser("~/.claude*/projects")))
     since = datetime.fromisoformat(a.since).replace(tzinfo=timezone.utc) if a.since else None
-    data = collect(roots, a.project, a.session, since)
+    until = (datetime.fromisoformat(a.until).replace(tzinfo=timezone.utc) + timedelta(days=1)) if a.until else None
+    data = collect(roots, a.project, a.session, since, until)
     if a.json:
         if a.roles or a.gaps:
             result = {}
             if a.roles:
                 result["roles"] = role_table(data)
+                result["fix_quote"] = fix_quote(result["roles"])
             if a.gaps:
                 result["gaps"] = gap_table(data, a.gap_min)
         else:
