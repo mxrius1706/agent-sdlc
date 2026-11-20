@@ -25,6 +25,8 @@ Read, in this order:
 
 **Check for an existing plan first.** If one exists for this phase, continue it; two plan files for one phase is the same defect as two roadmaps.
 
+**Close phase 0 with the depth.** Count the areas touched, the spec sources, the gate points and the files, and note the flags that apply (`schema`, `exclusive`, `security`, `dependency`, `nopattern`). Run `python3 -I <skill-dir>/scripts/plan-check.py depth --areas N --spec-sources N --gate-points N --files N [--flag <name> ...]` and put the answer to the user: the depth the script names (`mini`, `standard`, `voll`), with its reasons. The user confirms the depth. The project's own limits come from row `planning` / `plan limits` of the root CLAUDE.md section `Project references`; pass them as `--limits k=v,...`. The rule lives in the script; this text does not repeat it.
+
 ## Phase 1: The plan file
 
 `.claude/plans/<phase>-<slug>.md`, named after the branch so the two are obviously one thing.
@@ -39,13 +41,15 @@ Sections, all of them mandatory:
 
 **Critical files.** Which files change and how. A wrong assumption from the reading in phase 0 becomes visible here before it costs anything.
 
-**Order.** The concrete steps, in sequence, each small enough to be finished and checked. Each step gets a short id (`a1`, `a2`, ...) so commits and findings can name it.
+**Tasks.** A table, one row per step, each small enough to be finished and checked. Each task gets a short id (`a1`, `a2`, ...) so commits and findings can name it. Columns: `Id`, `Block`, `Task`, `Test target (seam)`, `Requirements`. The test target is the public interface the task is tested at, in backticks, with the case. A task without behaviour (pure text) carries `n/a: text`. Requirements are the spec ids (`REQ-`, `SEC-`, `CON-`, `GUD-`, `PAT-`, `AC-` plus number) the task serves.
 
-**Blocks.** The unit `execute-plan` builds: a group of **three to six tasks** that share an area of the code or build on each other, run in one worktree by one implementer and checked by one review. Each block gets an id (`b1`, `b2`, ...), its task ids, and its file area in one line. Cut blocks along the code, not along the roadmap's bullet points: tasks that touch the same files belong together, because splitting them only creates rebases between siblings. A block of one task is allowed only when the task is exclusive (schema, compose, running stack) or genuinely stands alone. Every hand-off costs minutes, so twenty single tasks are the slow plan and five blocks the fast one.
+**Order.** The sequence of the tasks by id, with the reason wherever it is not obvious.
 
-**Waves.** Which blocks may run at the same time. `execute-plan` runs up to **three** blocks of a wave in parallel, so the plan says where that is safe. Blocks in one wave have **disjoint** file areas and touch neither the schema, nor the compose files, nor anything that needs the running dev stack (database, dev server, a manual pass through the interface), nor the paths in row `planning` / `exclusive areas` of the root CLAUDE.md section `Project references` (no row: the general rule alone). Anything of that kind is marked **exclusive** and forms a wave of its own; keep exclusive blocks small (the migration alone, not the migration plus the features on top). List the waves in order, each with its block ids and one line on why the file areas do not overlap. Aim for few waves: three or four is normal, ten is a sign the blocks are too small. When in doubt about an overlap, put the block in the next wave rather than shrinking it.
+**Blocks.** A table, one row per block. Columns: `Block`, `Tasks`, `Files`, `Wave`, `Exclusive` (`yes` or `no`). Paths are comma separated; a directory covers everything below it. The unit `execute-plan` builds: a group of **three to six tasks** that share an area of the code or build on each other, run in one worktree by one implementer and checked by one review. Each block gets an id (`b1`, `b2`, ...), its task ids and its file area. Cut blocks along the code, not along the roadmap's bullet points: tasks that touch the same files belong together, because splitting them only creates rebases between siblings. A block of one task is allowed only when the task is exclusive (schema, compose, running stack) or genuinely stands alone. Every hand-off costs minutes, so twenty single tasks are the slow plan and five blocks the fast one.
 
-**Tests.** Case and expectation, including the failure cases. Each test target names the **seam** (public interface) it is tested at, with one line on what a test there catches and what it misses. Releasing the plan releases the seams. What is mandatory follows the root section `Testing requirements`.
+**Waves.** The `Wave` column of the blocks table says which blocks may run at the same time. `execute-plan` runs up to **three** blocks of a wave in parallel, so the plan says where that is safe. Blocks in one wave have **disjoint** file areas and touch neither the schema, nor the compose files, nor anything that needs the running dev stack (database, dev server, a manual pass through the interface), nor the paths in row `planning` / `exclusive areas` of the root CLAUDE.md section `Project references` (no row: the general rule alone). Anything of that kind is marked **exclusive** and forms a wave of its own; keep exclusive blocks small (the migration alone, not the migration plus the features on top). In this section list the waves in order, each with its block ids and one line on why the file areas do not overlap. Aim for few waves: three or four is normal, ten is a sign the blocks are too small. When in doubt about an overlap, put the block in the next wave rather than shrinking it.
+
+**Tests.** One test case per requirement, with its expectation, including the failure cases. Each test target names the **seam** (public interface) it is tested at, with one line on what a test there catches and what it misses. Releasing the plan releases the seams. What is mandatory follows the root section `Testing requirements`.
 
 **Verification.** The commands that have to come back clean, with what clean means. The project's standard commands (type check, full suite, migration, code generation) come from row `planning` / `verification`; no row: take them from the project's scripts and recommend the row.
 
@@ -74,6 +78,15 @@ Put the plan to the user. Before doing so, check it yourself:
 - The phase's gate items appear in verification.
 - The failure cases are in the tests, not only the happy path, and every test target names its seam.
 - Nothing in it decides something a spec left open without saying so.
+
+Then run the mechanical checks, with the depth the user confirmed:
+
+```
+python3 -I <skill-dir>/scripts/plan-check.py lint <plan> --depth <depth> --specs <spec-folder>
+python3 -I <skill-dir>/scripts/plan-check.py stage <plan> --depth <depth> [--limits k=v,...]
+```
+
+Every `lint` finding goes back into the plan. After at most **two** such returns, the findings that remain go to the user. The `stage` answer (`S`, `M`, `L`) is written into the plan, and the user confirms it at the release together with the plan. `execute-plan` reads it from there.
 
 Then wait. **Building starts after the release, not before.** This is the easiest point of the skill to erode, because the plan usually looks obviously right to the person who just wrote it.
 
