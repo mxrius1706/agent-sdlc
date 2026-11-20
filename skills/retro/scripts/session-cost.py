@@ -90,8 +90,14 @@ REVIEW_WORDS = r"review|nachpruef|\bdiffs?\b|sammelbefund"
 SPEC_WORDS = r"konsistenz|\bspecs?\b|backflow|rueckfluss|\badr\b"
 
 
-def classify_role(description):
-    """Rolle eines Subagenten aus seiner Beschreibung (Stichwortregeln, ohne Gross-/Kleinschreibung)."""
+TYPE_ROLES = {"gate-reviewer": "gate-review", "block-reviewer": "block-review", "block-fixer": "block-fix",
+              "block-implementer": "build", "acceptance-writer": "build"}
+
+
+def classify_role(description, agent_type=None):
+    """Rolle eines Subagenten: bekannter Agententyp zuerst, sonst Stichwortregeln der Beschreibung."""
+    if agent_type in TYPE_ROLES:
+        return TYPE_ROLES[agent_type]
     d = (description or "").lower()
     has = lambda *words: any(w in d for w in words)
     reviewing = re.search(REVIEW_WORDS, d)
@@ -120,7 +126,7 @@ def role_table(data):
     rows = {r: {"role": r, "agents": 0, "minutes": 0.0, "out": 0} for r in ROLES}
     for s in data:
         for ag in s["agents"]:
-            row = rows[classify_role(ag["label"])]
+            row = rows[classify_role(ag["label"], ag.get("type"))]
             row["agents"] += 1
             row["minutes"] += secs(ag) / 60
             row["out"] += ag["out"]

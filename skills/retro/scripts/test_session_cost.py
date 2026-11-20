@@ -66,6 +66,21 @@ class RoleTest(unittest.TestCase):
         self.assertEqual(sc.classify_role("Read and build"), "build")
 
 
+class AgentTypeTest(unittest.TestCase):
+    """Der Agententyp der Rollen gewinnt vor den Stichworten der Beschreibung."""
+
+    def test_type_wins(self):
+        cases = {"gate-reviewer": "gate-review", "block-reviewer": "block-review", "block-fixer": "block-fix",
+                 "block-implementer": "build", "acceptance-writer": "build"}
+        for typ, role in cases.items():
+            self.assertEqual(sc.classify_role("Cluster B portal server", typ), role, typ)
+
+    def test_unknown_type_falls_back_to_words(self):
+        self.assertEqual(sc.classify_role("Review Block b2", "general-purpose"), "block-review")
+        self.assertEqual(sc.classify_role("Review Block b2", "?"), "block-review")
+        self.assertEqual(sc.classify_role("Review Block b2", None), "block-review")
+
+
 class GenericTermsTest(unittest.TestCase):
     CASES = {
         "gate-review": ["Phase review plan", "Thermo review Datei", "Gate-Review nach Phase 2", "Phase 3 nachpruefen"],
