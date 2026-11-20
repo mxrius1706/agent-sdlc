@@ -10,8 +10,13 @@ Exit 2: Plan fehlt oder Block unbekannt (ein Satz auf stderr). Exit 3: Buendel g
 --max-chars (ein Satz auf stderr, keine Ausgabedatei). Gleiche Eingabe gibt gleiche Bytes.
 Dieses Skript importiert kein anderes Skript; chunk_markdown ist eine Kopie aus context-usage.py.
 """
+import argparse
+import hashlib
+import json
 import os
 import re
+import subprocess
+import sys
 
 MIN_LINE = 25  # Zeichen: kuerzere Zeilen zaehlen nicht (Trenner, Zufallstreffer)
 MIN_LINES = 3  # Abschnitte mit weniger verschiedenen Zeilen entfallen
@@ -19,6 +24,7 @@ MIN_LINES = 3  # Abschnitte mit weniger verschiedenen Zeilen entfallen
 HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 REQ_NO = re.compile(r"^([A-Za-z]{1,4}-?\d+[a-z]?|\d+(?:\.\d+)+)(?=$|[\s:.)\]-])")
 SKIP_DIRS = {".git", "node_modules", ".worktrees", ".obsidian", "__pycache__", ".venv"}
+DEFAULT_MAX = 60000
 SUB_TITLES = ("für subagenten", "fuer subagenten")
 
 REQ_ID = re.compile(r"\b[A-Z]{2,6}-\d+[a-z]?\b")
@@ -269,6 +275,13 @@ def area_dirs(files):
     return out
 
 
+def avoid_last(text):
+    """Glossarabschnitt: die _Avoid_-Zeilen (Aliase) stehen nach der Beschreibung."""
+    lines = text.rstrip("\n").split("\n")
+    avoid = [ln for ln in lines if ln.lstrip().lower().startswith("_avoid_")]
+    return "\n".join([ln for ln in lines if ln not in avoid] + avoid) + "\n"
+
+
 def word_in(term, text):
     pat = r"(?<![A-Za-z0-9\u00c0-\u024f])" + re.escape(term) + r"(?![A-Za-z0-9\u00c0-\u024f])"
     return re.search(pat, text, re.IGNORECASE) is not None
@@ -345,5 +358,124 @@ def collect(scope, root, specs, global_claude):
             continue
         seen.add(os.path.abspath(path))
         for c in chunk_markdown(rel_id_path(path, root), read_text(path) or ""):
+            c = dict(c, text=avoid_last(c["text"]))
             take([c], "glossar", bool(c["heading"]) and word_in(c["heading"], haystack))
     return inc, exc
+
+
+# ---- Buendel und Kommandozeile ----
+
+CONTRACT = """- Work only inside the worktree named in your dispatch. The main checkout, the dev server, the database and migrations are off limits.
+- Read the files your tasks touch before you change them. The plan decides the way; a plan that looks wrong is a BLOCKED, not a quiet edit.
+- Write the failing test first and watch it fail, then build. Run the type check and the tests of the touched files after each task.
+- One commit per task, task id in the subject, ending with the trailer above. Stage files one by one with `git add <path>`. No push, no amend."""
+
+GROUPS = (("subagenten", "Für Subagenten"), ("bereich", "Bereichsregeln"), ("regel", "Pfadregeln"),
+          ("spec", "Spec-Abschnitte"), ("glossar", "Glossar"))
+
+
+def last_trailer(message):
+    """Commit-Nachricht -> letzte Co-Authored-By-Zeile oder None."""
+    found = [ln.strip() for ln in message.splitlines() if ln.strip().lower().startswith("co-authored-by:")]
+    return found[-1] if found else None
+
+
+def git_trailer(root):
+    """Letzte Co-Authored-By-Zeile des neuesten Commits im Ordner root, sonst None."""
+    try:
+        p = subprocess.run(["git", "log", "-1", "--format=%B"], cwd=root, capture_output=True,
+                           text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return last_trailer(p.stdout) if p.returncode == 0 else None
+
+
+def fence(lines):
+    return "\n".join(lines).strip("\n")
+
+
+def render(plan_path, block_id, scope, included, trailer, secs):
+    files, reqs, rows = scope
+    out = [f"# Kontextpaket: Block {block_id}", "", f"- Plan: {os.path.basename(plan_path)}",
+           f"- Block: {block_id}", "- Dateien: " + (", ".join(files) if files else "-"),
+           "- Anforderungen: " + (", ".join(reqs) if reqs else "-"), "", "## Aufgaben", ""]
+    for r in rows:
+        out.append(f"- {column(r, 'id')}: {column(r, 'task')}")
+    out.append("")
+    for kind, title in GROUPS:
+        items = [i for i in included if i["kind"] == kind]
+        if not items:
+            continue
+        out += [f"## {title}", ""]
+        for it in items:
+            out += [f"<!-- Abschnitt: {it['id']} -->", it["text"].rstrip("\n"), ""]
+    out += ["## Decisions", "", fence(secs.get("decisions", [])), "",
+            "## Verification", "", fence(secs.get("verification", [])), "",
+            "## Trailer", "", trailer if trailer else "(none)", "", "## Worktree contract", "", CONTRACT, ""]
+    return "\n".join(out)
+
+
+class Parser(argparse.ArgumentParser):
+    def error(self, message):
+        raise ValueError("Ungueltige Kommandozeile: " + message.split("\n")[0])
+
+
+def parse_args(argv):
+    ap = Parser(prog="context-pack.py", add_help=False)
+    ap.add_argument("plan")
+    ap.add_argument("--block", required=True)
+    ap.add_argument("--root", required=True)
+    ap.add_argument("--specs", action="append", default=[])
+    ap.add_argument("--global-claude")
+    ap.add_argument("--trailer")
+    ap.add_argument("--out")
+    ap.add_argument("--max-chars", type=int, default=DEFAULT_MAX)
+    return ap.parse_args(argv)
+
+
+def main(argv):
+    try:
+        a = parse_args(argv)
+        if not os.path.isfile(a.plan):
+            raise ValueError(f"Der Plan {a.plan} fehlt.")
+        if not os.path.isdir(a.root):
+            raise ValueError(f"Das Projektverzeichnis {a.root} fehlt.")
+        scope = block_scope(a.plan, a.block)
+        secs = read_plan(a.plan)
+    except (ValueError, OSError, UnicodeDecodeError) as e:
+        print(str(e).rstrip(".") + ".", file=sys.stderr)
+        return 2
+    included, excluded = collect(scope, a.root, a.specs, a.global_claude)
+    notes = []
+    has_glossary = any(i["kind"] == "glossar" for i in included + excluded)
+    if not has_glossary:
+        notes.append("no glossary found")
+    trailer = a.trailer or git_trailer(a.root)
+    if not trailer:
+        notes.append("no trailer found")
+    text = render(a.plan, a.block, scope, included, trailer, secs)
+    if len(text) > a.max_chars:
+        print(f"Das Paket fuer Block {a.block} hat {len(text)} Zeichen, mehr als die Grenze {a.max_chars}.",
+              file=sys.stderr)
+        return 3
+    data = text.encode("utf-8")
+    if a.out:
+        manifest = {"block": a.block, "hash": hashlib.sha256(data).hexdigest(),
+                    "included": [i["id"] for i in included], "excluded": [e["id"] for e in excluded],
+                    "notes": notes}
+        try:
+            with open(a.out, "wb") as fh:
+                fh.write(data)
+            with open(a.out + ".manifest.json", "w", encoding="utf-8") as fh:
+                json.dump(manifest, fh, ensure_ascii=False, indent=2)
+                fh.write("\n")
+        except OSError as e:
+            print(f"Die Ausgabe nach {a.out} ging nicht: {e.strerror}.", file=sys.stderr)
+            return 2
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

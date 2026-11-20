@@ -151,6 +151,11 @@ class Collect(unittest.TestCase):
         self.assertEqual(["specs/GLOSSARY.md#Lager"], inc)
         self.assertEqual([], exc)
 
+    def test_avoid_zeilen_stehen_hinter_der_beschreibung(self):
+        make(self.root, "GLOSSARY.md", "## Lager\n_Avoid_: Halle\nBeschreibung Zeile mit genug Text\n" + body("g"))
+        _, _, items = self.run_collect(["src/lager.py"])
+        self.assertTrue(items[0]["text"].rstrip().endswith("_Avoid_: Halle"))
+
     def test_glossarbegriff_aus_dateinamen(self):
         make(self.root, "GLOSSARY.md", "## Lager\n" + body("g"))
         inc, _, _ = self.run_collect(["src/lager.py"])
@@ -172,6 +177,57 @@ class Collect(unittest.TestCase):
         inc, exc, _ = self.run_collect(["src/a.py"])
         self.assertEqual([], inc)
         self.assertEqual([".claude/rules/r.md#R"], exc)
+
+
+class Main(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = os.path.join(self.tmp.name, "projekt-a")
+        os.makedirs(self.root)
+        self.plan = make(self.tmp.name, "plan.md", PLAN + "\n## Decisions\n\n| Question | Answer | Reason |\n"
+                         "|---|---|---|\n| Q | A-ANTWORT | R |\n\n## Verification\n\n- `pytest -q`\n")
+        self.mod = load()
+
+    def call(self, argv):
+        import contextlib
+        import io
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = self.mod.main(argv)
+        return code, out.getvalue(), err.getvalue()
+
+    def test_letzte_coauthored_zeile_der_nachricht(self):
+        msg = "feat: x\n\nCo-Authored-By: A <a@example.invalid>\nco-authored-by: B <b@example.invalid>\n"
+        self.assertEqual("co-authored-by: B <b@example.invalid>", self.mod.last_trailer(msg))
+        self.assertIsNone(self.mod.last_trailer("feat: x\n"))
+
+    def test_buendel_enthaelt_kopf_entscheidungen_und_verifikation(self):
+        code, out, _ = self.call([self.plan, "--block", "b1", "--root", self.root, "--trailer", "T: 1"])
+        self.assertEqual(0, code)
+        for needle in ("b1", "src/x.py", "A-ANTWORT", "pytest -q", "T: 1"):
+            self.assertIn(needle, out)
+
+    def test_zu_gross_schreibt_nichts_nach_stdout(self):
+        code, out, err = self.call([self.plan, "--block", "b1", "--root", self.root, "--max-chars", "10"])
+        self.assertEqual((3, ""), (code, out))
+        self.assertIn("10", err)
+
+    def test_max_chars_genau_an_der_grenze_ist_erlaubt(self):
+        _, out, _ = self.call([self.plan, "--block", "b1", "--root", self.root, "--trailer", "T: 1"])
+        code, _, _ = self.call([self.plan, "--block", "b1", "--root", self.root, "--trailer", "T: 1",
+                                "--max-chars", str(len(out))])
+        self.assertEqual(0, code)
+
+    def test_ungueltige_option_gibt_exit_2_ohne_traceback(self):
+        code, _, err = self.call([self.plan, "--block", "b1", "--root", self.root, "--max-chars", "x"])
+        self.assertEqual(2, code)
+        self.assertNotIn("Traceback", err)
+
+    def test_fehlendes_wurzelverzeichnis_exit_2(self):
+        code, _, err = self.call([self.plan, "--block", "b1", "--root", os.path.join(self.tmp.name, "nein")])
+        self.assertEqual(2, code)
+        self.assertTrue(err.strip())
 
 
 if __name__ == "__main__":
