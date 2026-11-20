@@ -16,6 +16,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 
@@ -73,6 +74,51 @@ def secs(t):
     """Aktive Zeit: Summe der Abstaende zwischen Nachrichten, je Abstand hoechstens IDLE_CAP."""
     ts = sorted(t.get("ts", []))
     return sum(min((b - a).total_seconds(), IDLE_CAP) for a, b in zip(ts, ts[1:]))
+
+
+# Reihenfolge der Rollenregeln, vom spezifischsten zum allgemeinsten, erste Treffer-Regel gewinnt:
+#  1. gate-review  (phase review, oder gate/thermo plus review) - vor block-review, weil "block" auch im Gate-Text vorkommt
+#  2. gate-fix     (fix plus gate/thermo/umbau)                 - vor block-fix, sonst gewinnt eine Block-Id im Text
+#  3. block-review (review plus block)
+#  4. block-fix    (fix plus Block-Id wie b3)                   - vor build, weil "Fix build b3" ein Fix ist
+#  5. build        (build oder bau)
+#  6. research     (read, fetch, research, lese)
+#  7. other
+def classify_role(description):
+    """Rolle eines Subagenten aus seiner Beschreibung (Stichwortregeln, ohne Gross-/Kleinschreibung)."""
+    d = (description or "").lower()
+    has = lambda *words: any(w in d for w in words)
+    if "phase review" in d or (has("gate", "thermo") and "review" in d):
+        return "gate-review"
+    if "fix" in d and has("gate", "thermo", "umbau"):
+        return "gate-fix"
+    if "review" in d and "block" in d:
+        return "block-review"
+    if "fix" in d and re.search(r"\bb\d+\b", d):
+        return "block-fix"
+    if has("build", "bau"):
+        return "build"
+    if has("read", "fetch", "research", "lese"):
+        return "research"
+    return "other"
+
+
+ROLES = ["build", "block-review", "block-fix", "gate-review", "gate-fix", "research", "other"]
+
+
+def print_roles(data):
+    """Je Rolle: Anzahl Subagenten, aktive Minuten, Ausgabe-Token."""
+    rows = {r: [0, 0.0, 0] for r in ROLES}
+    for s in data:
+        for ag in s["agents"]:
+            row = rows[classify_role(ag["label"])]
+            row[0] += 1
+            row[1] += secs(ag) / 60
+            row[2] += ag["out"]
+    print(f"{'Rolle':<14} {'Agents':>6} {'Min':>8} {'out':>10}")
+    for r in ROLES:
+        n, m, o = rows[r]
+        print(f"{r:<14} {n:>6} {m:>8.1f} {o:>10,}")
 
 
 def short_model(models):
@@ -151,6 +197,7 @@ def main():
     ap.add_argument("--session", help="Sitzungs-ID oder Anfang davon")
     ap.add_argument("--since", help="nur Sitzungen ab Datum (YYYY-MM-DD)")
     ap.add_argument("--by-agent", action="store_true", help="auch Zeile je Subagent")
+    ap.add_argument("--roles", action="store_true", help="Tabelle je Rolle der Subagenten")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
 
@@ -164,6 +211,9 @@ def main():
     if not data:
         print("Keine Sitzungen gefunden.", file=sys.stderr)
         sys.exit(1)
+    if a.roles:
+        print_roles(data)
+        return
     print(HEAD)
     grand = []
     for s in data:
