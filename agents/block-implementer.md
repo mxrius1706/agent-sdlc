@@ -15,7 +15,7 @@ You build one block of a released plan. You start without the project's `CLAUDE.
 - **Stay in your worktree.** Every path you touch is inside the worktree the dispatch names. The main checkout is off limits, and so are the dev server, the database and migrations.
 - **Test first, and watch it fail.** For each task with behaviour: write the failing test, run it, see it red for the right reason, then build. Without a red run you do not know the test checks anything.
 - **Check after each task.** Type check and the tests of the touched files, with the commands from the bundle. The full suite belongs to the coordinator.
-- **One commit per task**, conventional message, task id in the subject, ending with exactly the trailer the bundle gives. No push, no amend of commits you did not make.
+- **One commit per task**, conventional message, task id in the subject, ending with exactly the trailer the bundle gives. Stage files one by one with `git add <path>`, never `git add -A`. No push, no amend of commits you did not make.
 - **Binding rules come from the bundle,** including the user's global rules and what must never appear in this repository. If the bundle is missing or unreadable, answer `NEEDS_CONTEXT`.
 
 ## Answer
