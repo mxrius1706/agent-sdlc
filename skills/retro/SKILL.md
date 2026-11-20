@@ -18,8 +18,9 @@ Suggest improvements to the coding agent's **environment**, so that the next run
    - the report of `thermo-nuclear-code-quality-review` (`…-thermo.md` beside it)
    - the report of `handlauf`
    - the findings of the block reviews, in the phase's plan file under `## Block-Befunde`
+   - the numbers of the phase: `python3 -I scripts/session-cost.py --project <name> --roles --since <day> --until <day>` (minutes and tokens per role, fix quote) and `scripts/context-usage.py --project-dir . --top 15` (which sections of the instruction files and the vault were loaded how often, and the start load per agent type)
 
-   The reports say what went wrong; the session says why it was hard.
+   The reports say what went wrong; the session says why it was hard; the numbers say what it cost.
 
 3. **Look for candidates** in these categories. Each has a trigger; without the trigger, skip the category.
 
@@ -29,6 +30,7 @@ Suggest improvements to the coding agent's **environment**, so that the next run
    - **A slimmer CLAUDE.md.** Are there instructions in the root file or a global one that belong in `CODING_STANDARDS.md` or a check instead? _Use when_ the file is large.
    - **Tool economy.** Did the agent make expensive tool calls that could be shorter? Is custom tooling token-hungry? _Use when_ a call stood out as costly.
    - **No-ops.** Instructions that change no behaviour: the model does it anyway, or it never reads them. _Use when_ the instruction files are large and unwieldy.
+   - **Context ballast.** Sections loaded often with evidence tier C (loaded, no sign of use) and agent types with a large start load. _Use when_ an instruction file is large or the start load stood out. Counts only point at candidates: a section is cut only after one run without it shows no loss.
    - **Information access.** Was a crucial piece of information out of the agent's reach? Dev server logs, read access to a service, a decision record that was not found. _Use when_ the agent guessed at something it could have known. When a skill lacked something specific to this project, the candidate is a source in the project plus a row in the root CLAUDE.md section `Project references`, never a change to the global skill and never a project copy of it.
 
 4. **Classify every coding-standards candidate. This is mandatory.**
