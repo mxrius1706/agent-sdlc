@@ -175,7 +175,7 @@ Severity in four steps: exploitable or data-destroying; breaks a binding project
 
 Answer: `APPROVED` with collected findings, or `CHANGES_REQUIRED` with the blocking list (file:line, rule, fix).
 
-**Blocking findings:** a fresh `block-fixer` in the same worktree, one fix commit, then the reviewer checks **only the fix diff and the findings**: each finding fixed as the reviewer wrote it, and its test shown red on the unfixed code for the finding's reason. Two rounds without green: go to the user.
+**Blocking findings:** a fresh `block-fixer` in the same worktree, one fix commit, then the reviewer checks **only the fix diff and the findings**: each finding fixed as the reviewer wrote it, and its test shown red on the unfixed code for the finding's reason. Two rounds without green: go to the user. Cuts 1 and 2 of "Review cuts" change when this review and its follow-up run.
 
 ### Bundled findings
 
@@ -214,7 +214,7 @@ All waves merged and green: hand over to the phase gate. The stage in the plan d
 **Stages S and M:**
 
 1. `review-changes` runs here while the user runs `handlauf` in a session of their own at the same time. Its phase reviewers are cut as `review-changes` says (clusters from about thirty files, one rule, owned there); one review per cluster otherwise only with one sentence of reason in the run state.
-2. One shared fix round takes both finding lists, bundled by pattern as in "Bundled findings". Then exactly one follow-up run.
+2. One shared fix round takes both finding lists, bundled by pattern as in "Bundled findings". Then exactly one follow-up run (cuts 2 and 3 of "Review cuts" may drop it).
 3. `thermo-nuclear-code-quality-review` runs when the precheck's last line says `thermo: yes`, at stage L, or when the user asks. Any other trigger (for example "many lines since the last run") counts only when the session names it to the user in one sentence and the user agrees; an entry in a project roadmap is no trigger.
 4. `retro` runs when the fix quote is above 0.3, a finding of the top two severity bands appeared, or the user asks. `config-sync` runs when `ref-check.py` (in `config-sync`'s `scripts/`) reports a missing path or a decision changed.
 
@@ -223,6 +223,18 @@ All waves merged and green: hand over to the phase gate. The stage in the plan d
 Write the collected block-review findings into the plan file under `## Block-Befunde` (block id, severity, finding, one line each); they outlive this session there. `review-changes` gets them as input, and `retro` reads them from the plan file as one of its primary sources. `handlauf` gets none of them and is not started from this session; hand the user the branch and the surfaces to walk, and let them start it.
 
 Check that `.worktrees/` is empty and `git worktree list` shows only the main checkout.
+
+## Review cuts
+
+A trial, switched per plan by the line `kuerzungen` in the plan's Decisions: a list of `1`, `2`, `3`, or `keine`. Without the line the flow above stands unchanged.
+
+- **1: block review only for risk.** Step 5 runs for blocks marked `risk` in the plan (a column or a note in the Blocks table) and at stage L. Any other block rests on its tests, the pre-check and the gate; enter the skipped review in the run state as `uebersprungen`.
+- **2: no reviewer follow-up after a fix round** (steps 5 and 7) when every finding had a red test and the pre-check is green. A finding of the top two severity bands (exploitable or data-destroying; breaks a binding rule) gets the follow-up run anyway.
+- **3: one gate review per phase.** A follow-up run of `review-changes` only after a finding of the top two bands.
+
+**Measure each cut.** `retro` counts, per cut, the skipped reviews, the findings of `handlauf` and the tests in the phase, and the fix quote (`session-cost.py --roles`), next to the baseline values.
+
+**Fall back.** When `handlauf` or a test finds a top-two-band finding in the phase that the skipped review should have found by the plan, the cut is withdrawn: strike its number from `kuerzungen` and give the reason in the report.
 
 ## Auslauf
 
