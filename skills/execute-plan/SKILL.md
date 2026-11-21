@@ -74,7 +74,7 @@ One run at a time per phase. Before every start of a run (a `go`, the follow-up 
 python3 -I <skill-dir>/scripts/run-lock.py acquire .claude/run/<phase>.lock
 ```
 
-Exit 0 starts the run. Exit 1 means a live run holds the lock: start nothing, tell the user. At the end of the run, and when the session stops, run `release` on the same file. A lock of a dead process is reported as stale and taken over.
+Exit 0 starts the run. Exit 1 means a live run holds the lock: start nothing, tell the user. At the end of the run, and when the session stops, run `release` on the same file. A lock of a dead process is reported as stale and taken over. The holder is the session process (the first ancestor that is not a shell); `--pid N` overrides it.
 
 A wake-up call (scheduled resume) is cancelled as soon as the user starts the run by hand; the lock keeps a wake-up that fires anyway from starting a second run.
 
