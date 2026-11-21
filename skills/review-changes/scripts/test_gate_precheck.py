@@ -89,3 +89,43 @@ class ReportUnitTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PipeExitCodeTest(unittest.TestCase):
+    """t9: Exit 1 eines Befehls der Projektzeile `verification` bleibt Exit 1, auch in einer Pipe."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = self._tmp.name
+        # endet mit 1, wenn er ohne Zusatzargumente laeuft (echte Pipe), sonst 0
+        self.script = os.path.join(self.root, "validate.py")
+        with open(self.script, "w", encoding="utf-8") as fh:
+            fh.write("import sys\nprint('validate-marker')\nsys.exit(0 if len(sys.argv) > 1 else 1)\n")
+
+    def test_plain_exit_1_stays_fail(self):
+        gp = load()
+        res = gp.run_checks([sys.executable + " " + self.script], self.root)
+        self.assertEqual(res[0][0], "FAIL")
+        self.assertIn("Exit 1", res[0][2])
+
+    def test_exit_1_in_front_of_a_pipe_stays_fail(self):
+        gp = load()
+        res = gp.run_checks([sys.executable + " " + self.script + " | cat"], self.root)
+        self.assertEqual(res[0][0], "FAIL")
+        self.assertIn("validate-marker", res[0][2])
+
+    def test_main_exit_1_with_piped_command(self):
+        import contextlib
+        import io
+        import subprocess
+        gp = load()
+        subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
+        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid",
+                        "-c", "commit.gpgsign=false", "commit", "-q", "--allow-empty", "-m", "i"],
+                       cwd=self.root, check=True)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = gp.main(["--base", "HEAD", "--root", self.root,
+                            "--cmd", sys.executable + " " + self.script + " | cat"])
+        self.assertEqual(code, 1, out.getvalue())
