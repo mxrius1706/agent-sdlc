@@ -107,3 +107,16 @@ t1 bis t6 zuerst (kritisch, deterministisch). Dann t7 bis t12 (unabhängig, ohne
 
 1. Pilot 2 mit den Kürzungsschaltern 1 bis 3 gleichzeitig oder nacheinander? (Empfehlung: gleichzeitig, weil ein Pilot teuer ist, mit je Schalter einzeln auswertbarer Messung.)
 2. Welches Projekt für Pilot 2 und wann (Kontingent)?
+
+## Block-Befunde
+
+| Block | Stufe | Befund |
+|---|---|---|
+| b3 | 3 | `session-cost.py` `COMMIT_RE`: `git commit -am "fix: x"` und Typ mit Großbuchstaben werden nicht erkannt |
+| b3 | 4 | Satz zur Doppelarbeit in `retro/SKILL.md` steht nicht wörtlich in t12 |
+| b2 | 3 | `gate-precheck.py` `split_pipe`: zitiertes `"|"` allein wird als Pipe gelesen (Test fehlt) |
+| b2 | 3 | `||` wird als Argument durchgereicht, nicht dokumentiert |
+| b2 | 3 | `ref-check.py` Präfixfilter `specs/` und `refs/` verschluckt auch echte Pfade unter `specs/` (breit, laut Plan gewollt) |
+| b2 | 4 | Tests fehlen für GATE-ORDER auf zwei Zeilen und in Codeblöcken |
+| b1 | 3 | `run-lock.py` Rennen: leere Datei nach `O_EXCL` gilt als veraltet, zwei Übernehmer eines toten Locks; Test für leere/kaputte Lockdatei fehlt |
+| b1 | 3 | `session-state.py` Namensteile als Teilstring: `phase-3-code-review-tool.md` wird als Bericht gemeldet, wenn neuer als der Laufzustand |
