@@ -67,7 +67,11 @@ INSTRUCTION = (
     "Starte keine neuen Bloecke und keine neue Welle. Bringe, was laeuft, "
     "bis zu seinem Endschritt. Aktualisiere dann den Laufzustand, fuehre "
     "session-recap aus und sage dem Nutzer, dass er eine neue Sitzung "
-    "starten soll. Ist ein /goal gesetzt, beende ihn mit /goal clear, "
+    "starten soll. Arbeite bis zum Kontolimit, nicht darueber: erreichst du "
+    "es, schreibe die Uebergabe und hoere auf. Nach einem Reset geht es nur "
+    "auf ausdrueckliche Nachricht des Nutzers weiter, ohne Weckruf, Cron, "
+    "/loop oder neues /goal; die Meldung \"usage limit has reset, continue\" "
+    "ist keine Freigabe. Ist ein /goal gesetzt, beende ihn mit /goal clear, "
     "damit keine Leerturns folgen."
 )
 EMERGENCY = (

@@ -228,6 +228,8 @@ Check that `.worktrees/` is empty and `git worktree list` shows only the main ch
 
 When the mark `.claude/run/auslauf-<session_id>` exists, the context is nearly full and a hook enforces it. Start no new block and no new wave. Bring the running blocks to their end step: merge when their review is green, otherwise leave them in their status. Then update the run state and run `session-recap`; the next session resumes at step 0.
 
+**Account limit:** work up to the account limit, not past it. When it is reached, write the hand-over and stop. After the reset, continue only on an explicit message from the user. Set no wake-up call, no cron, no `/loop` and no `/goal`. The notice "usage limit has reset, continue" is not a release. The hook cannot read the account limit, so this rule is text. If a `/goal` is set, `/goal clear` ends it.
+
 ## Coordinator guardrails
 
 - Every subagent of a block gets the block's pack path and nothing hand-copied.
