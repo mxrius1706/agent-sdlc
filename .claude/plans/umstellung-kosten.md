@@ -111,6 +111,7 @@ Branch `umstellung/4-paket-gates`. Startet nach Phase 3, weil Plan-Lint und Stuf
 
 ### Phase 5: Pilot und Bewertung ⬜
 Branch `umstellung/5-pilot`. Startet nach Phase 4.
+Plan: `umstellung-5-fazit.md` (Status ⬜, freigegeben, Stufe L).
 - Erst Pilotprojekt 1, dann Pilotprojekt 2: je eine echte Bauphase nach dem neuen Ablauf. Vergleich mit den Basiswerten aus Phase 1 (Fix-Quote, Tokens je Rolle, aktive Zeit, Kalenderzeit, Funde je Gate).
 - Ablation für große Kontext-Kandidaten, die der Tracker meldet (ein Block ohne den Abschnitt, Vergleich der Funde).
 - Entscheidung: Zitierpflicht ja oder nein. MemPalace-Versuch (geparkt) nur starten, wenn der Builder steht und Wiederfinden ein Befund aus den Pilotphasen ist.

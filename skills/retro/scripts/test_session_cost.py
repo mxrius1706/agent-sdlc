@@ -81,6 +81,62 @@ class AgentTypeTest(unittest.TestCase):
         self.assertEqual(sc.classify_role("Review Block b2", None), "block-review")
 
 
+class HandlaufRoleTest(unittest.TestCase):
+    """Agents des Handlaufs bekommen eine eigene Rolle statt `other`."""
+
+    def test_description_of_general_purpose_agent(self):
+        self.assertEqual(sc.classify_role("Handlauf Phase 2", "general-purpose"), "handlauf")
+        self.assertEqual(sc.classify_role("Handlauf: Plan gegen Code pruefen", "general-purpose"), "handlauf")
+
+    def test_description_wins_over_review_words(self):
+        self.assertEqual(sc.classify_role("Handlauf Review Phase 3", "general-purpose"), "handlauf")
+
+    def test_type_handlauf(self):
+        self.assertEqual(sc.classify_role("Durchlauf", "handlauf"), "handlauf")
+
+    def test_role_table_has_row(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [("Handlauf Phase 2", 1), ("Build block b1", 1)])
+            rows = {r["role"]: r for r in sc.role_table(sc.collect([tmp], None, None, None))}
+            self.assertEqual(rows["handlauf"]["agents"], 1)
+            self.assertEqual(rows["other"]["agents"], 0)
+
+    def test_cli_prints_role(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [("Handlauf Phase 2", 1)])
+            self.assertIn("handlauf", run("--root", tmp, "--roles").stdout)
+
+
+def bash_line(ts, command):
+    o = {"type": "assistant", "timestamp": ts, "uuid": ts,
+         "message": {"id": ts, "model": "m-x", "usage": {"output_tokens": 5},
+                     "content": [{"type": "tool_use", "id": "t" + ts, "name": "Bash", "input": {"command": command}}]}}
+    return json.dumps(o)
+
+
+class FixQuoteWithoutBuildAgentsTest(unittest.TestCase):
+    """Ohne build-Agents ist die Fix-Quote nie ein stummes `-`: Zahl aus den Commits der Hauptsitzung oder benannter Grund."""
+
+    def fix_line(self, out):
+        return [l for l in out.splitlines() if l.startswith("Fix-Quote")][0]
+
+    def test_quote_from_main_session_commits(self):
+        main = [bash_line("2026-11-01T10:00:00Z", 'git commit -m "feat(a): erster Teil"'),
+                bash_line("2026-11-01T10:01:00Z", 'git commit -m "feat(b): zweiter Teil"'),
+                bash_line("2026-11-01T10:02:00Z", 'git commit -m "feat(c): dritter Teil"'),
+                bash_line("2026-11-01T10:03:00Z", 'git commit -m "fix(a): Befund behoben"')]
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [("Review Block b1", 1)], main_lines=main)
+            self.assertEqual(self.fix_line(run("--root", tmp, "--roles").stdout), "Fix-Quote 0.33")  # 1 Fix / 3 Bau
+
+    def test_gap_is_named_when_not_derivable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_projects(tmp, [("Review Block b1", 1)])  # weder build-Agents noch Commits
+            text = self.fix_line(run("--root", tmp, "--roles").stdout)
+            self.assertNotEqual(text.strip(), "Fix-Quote -")
+            self.assertGreater(len(text.removeprefix("Fix-Quote -").strip()), 5, text)  # Grund steht dabei
+
+
 class GenericTermsTest(unittest.TestCase):
     CASES = {
         "gate-review": ["Phase review plan", "Thermo review Datei", "Gate-Review nach Phase 2", "Phase 3 nachpruefen"],

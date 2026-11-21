@@ -46,6 +46,7 @@ Ask git for the repository root (`git rev-parse --show-toplevel`); it is not alw
 The run state is the file `.claude/run/<phase>.md` in the project. Look for it first.
 
 - **Found:** read it, then compare with `git worktree list` and `git branch --list '<phase-branch>-*'`. Git wins over the file where they differ; correct the file. Resume at the known point: `laufend` with a worktree and commits goes on in that worktree, `review` and `fix` go to step 5, `gemerged` is done. Start no block twice.
+- **Reports first:** the session hook lists reports in `.claude/plans/` newer than the run state (names with `bericht`, `review`, `handlauf`, `retro`, `thermo` or `config-sync`). Each one is a finished gate step. Enter it in the run state with its path and start no gate step that has a report; read the report and go on from its result.
 - **Not found:** create it in step 2.
 
 **Format:**
@@ -55,14 +56,32 @@ Phasen-Branch: <name>
 Plan: <path>
 Regelbuendel: <path>
 Paket <block>: <path>
+Review <block>: uebersprungen
+Gate <step>: <report path>
 
 | Block | Status | Statuscode | Fix-Runden | Worktree |
 |---|---|---|---|---|
 ```
 
-Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact. `Regelbuendel` names the hand-written fallback (step 2); write one extra header line `Paket <block>: <path>` per block pack, never a table column.
+Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact. `Regelbuendel` names the hand-written fallback (step 2); write one extra header line `Paket <block>: <path>` per block pack, never a table column. The same holds for a skipped block review ("Review cuts", cut 1): the header line `Review <block>: uebersprungen`, no status value. Write one `Gate <step>: <report path>` line per finished gate step (`review-changes`, `handlauf`, `thermo`, `retro`, `config-sync`) as soon as its report exists.
 
 **Write the run state after every transition:** dispatch, status code received, review answer, fix round, merge, block blocked.
+
+## Run lock
+
+One run at a time per phase. Before every start of a run (a `go`, the follow-up run after a hand run), from the repository root:
+
+```
+python3 -I <skill-dir>/scripts/run-lock.py acquire .claude/run/<phase>.lock
+```
+
+Exit 0 starts the run. Exit 1 means a live run holds the lock: start nothing, tell the user. At the end of the run, and when the session stops, run `release` on the same file. A lock of a dead process is reported as stale and taken over. The holder is the session process (the first ancestor that is not a shell); `--pid N` overrides it.
+
+A wake-up call (scheduled resume) is cancelled as soon as the user starts the run by hand; the lock keeps a wake-up that fires anyway from starting a second run.
+
+## Account check before long runs
+
+Before a run with two `go` or more, or one expected to last over 30 minutes, check the account quota: `clauded` shows each account's usage and reset time. Start when no account is above 90 % of its 5-hour window. Otherwise tell the user which account is full and when it resets.
 
 ## Step 1: Read the plan, extract blocks and waves
 
@@ -88,6 +107,7 @@ python3 -I <skill-dir>/scripts/context-pack.py <plan> --block <id> --root <proje
 
 The manifest lands beside it as `.claude/run/pack-<block>.md.manifest.json`. The pack holds what the block's files and requirement ids touch: the `## Für Subagenten` sections, area rules, matching path rules, spec sections, glossary terms, the plan's decisions, the verification commands, the commit trailer and the worktree contract. Pass `--trailer` when the root instructions name one.
 
+- **Inputs come from the project:** `--specs` and `--global-claude` from the row `execute-plan` / `specs` of the root CLAUDE.md section `Project references` (spec folder, and the user's global instructions file if the row names it). No row: ask the user once and recommend the row; a pack without specs is a pack that misses them. A `<spec> REQ-n` in the plan's Requirements column selects that spec only; a bare id found in several specs selects nothing and shows in `notes`.
 - **Read the manifest** once: the `excluded` list shows what exists in the sources and did not match, `notes` names what is absent (no glossary, no trailer). Close a gap with a corrected input and a new run, or with a line in the brief.
 - **Pass only the pack path** to every subagent of the block. Record it in the run state header as `Paket <block>: <path>`.
 - **Exit 3** means the pack exceeds `--max-chars`. The script never cuts; split the block (the user agrees to the new cut), then build the packs again.
@@ -157,7 +177,7 @@ Severity in four steps: exploitable or data-destroying; breaks a binding project
 
 Answer: `APPROVED` with collected findings, or `CHANGES_REQUIRED` with the blocking list (file:line, rule, fix).
 
-**Blocking findings:** a fresh `block-fixer` in the same worktree, one fix commit, then the reviewer checks **only the fix diff and the findings**: each finding fixed as the reviewer wrote it, and its test shown red on the unfixed code for the finding's reason. Two rounds without green: go to the user.
+**Blocking findings:** a fresh `block-fixer` in the same worktree, one fix commit, then the reviewer checks **only the fix diff and the findings**: each finding fixed as the reviewer wrote it, and its test shown red on the unfixed code for the finding's reason. Two rounds without green: go to the user. Cuts 1 and 2 of "Review cuts" change when this review and its follow-up run.
 
 ### Bundled findings
 
@@ -187,7 +207,7 @@ In the order blocks finish.
 
 ## Step 7: Close the plan
 
-All waves merged and green: hand over to the phase gate. The stage in the plan decides its shape. The reviews keep their full depth. The whole-phase review is dispatched as `gate-reviewer`.
+All waves merged and green: hand over to the phase gate. The stage in the plan decides its shape. Reviews keep their full depth unless the plan's `kuerzungen` line ("Review cuts") or the security rule of `review-changes` says otherwise. The whole-phase review is dispatched as `gate-reviewer`.
 
 **Run the gate without asking.** Work the steps below one after the other and report once at the end. Stop only for: `handlauf` (the user starts it), the release go, a `BLOCKED` block, the Auslauf mark, or a decision only the user can make. "Shall I run the next step?" is not a stop. A plan without a stage (written before `plan-check.py`) is treated as stage M.
 
@@ -195,9 +215,9 @@ All waves merged and green: hand over to the phase gate. The stage in the plan d
 
 **Stages S and M:**
 
-1. `review-changes` runs here while the user runs `handlauf` in a session of their own at the same time.
-2. One shared fix round takes both finding lists, bundled by pattern as in "Bundled findings". Then exactly one follow-up run.
-3. `thermo-nuclear-code-quality-review` runs when the precheck's last line says `thermo: yes` or the user asks.
+1. `review-changes` runs here while the user runs `handlauf` in a session of their own at the same time. Its phase reviewers are cut as `review-changes` says (the cluster rule is owned there).
+2. One shared fix round takes both finding lists, bundled by pattern as in "Bundled findings". Then exactly one follow-up run (cuts 2 and 3 of "Review cuts" may drop it).
+3. `thermo-nuclear-code-quality-review` runs on the triggers that skill names.
 4. `retro` runs when the fix quote is above 0.3, a finding of the top two severity bands appeared, or the user asks. `config-sync` runs when `ref-check.py` (in `config-sync`'s `scripts/`) reports a missing path or a decision changed.
 
 **Stage L:** after the precheck the order of `plan-build` stands (gate checklist, full suite, `handlauf` where there is an interface, `review-changes`, `thermo-nuclear-code-quality-review`, report), and `thermo-nuclear-code-quality-review` always runs.
@@ -206,9 +226,25 @@ Write the collected block-review findings into the plan file under `## Block-Bef
 
 Check that `.worktrees/` is empty and `git worktree list` shows only the main checkout.
 
+## Review cuts
+
+A trial, switched per plan by the line `kuerzungen` in the plan's Decisions: a list of `1`, `2`, `3`, or `keine`. Without the line the flow above stands unchanged.
+
+- **1: block review only for risk.** Step 5 runs for blocks marked `risk` in the plan (a column or a note in the Blocks table) and at stage L. Any other block rests on its tests, the pre-check and the gate; enter the skipped review as the header line `Review <block>: uebersprungen`.
+- **2: no reviewer follow-up after a fix round** (steps 5 and 7) when every finding had a red test and the pre-check is green. A finding of the top two severity bands (exploitable or data-destroying; breaks a binding rule) gets the follow-up run anyway.
+- **3: one gate review per phase.** A follow-up run of `review-changes` only after a finding of the top two bands.
+
+Cuts 2 and 3 both act on step 7 and apply together: the follow-up runs only when neither lets it drop.
+
+**Measure each cut.** `retro` counts it (see its step "Measure the review cuts"), next to the baseline values.
+
+**Fall back.** `retro` rates every finding of `handlauf` and of the tests. It counts as one the skipped review would have found when it touches a file in the diff of the skipped block and a lens of the block review (spec or quality, by the pack's checklist) could have named it. Severity is the four steps of step 5; the top two block. One such blocking finding withdraws the cut: strike its number from `kuerzungen` and give the reason in the report.
+
 ## Auslauf
 
 When the mark `.claude/run/auslauf-<session_id>` exists, the context is nearly full and a hook enforces it. Start no new block and no new wave. Bring the running blocks to their end step: merge when their review is green, otherwise leave them in their status. Then update the run state and run `session-recap`; the next session resumes at step 0.
+
+**Account limit:** work up to the account limit, not past it. When it is reached, write the hand-over and stop. After the reset, continue only on an explicit message from the user. Set no wake-up call, no cron, no `/loop` and no `/goal`. The notice "usage limit has reset, continue" is not a release. The hook cannot read the account limit, so this rule is text. If a `/goal` is set, `/goal clear` ends it.
 
 ## Coordinator guardrails
 

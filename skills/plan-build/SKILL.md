@@ -102,8 +102,8 @@ Write the procedure once, at the top, and state that it holds for every phase wi
 - **All stages:** `gate-precheck.py` first (`review-changes` owns it), fixing every FAIL before any reviewer starts.
 - **S and M, then:**
   1. `handlauf` (user, own session) and `review-changes` at the same time.
-  2. One shared fix round for both finding lists, then one follow-up run.
-  3. `thermo-nuclear-code-quality-review` only when the precheck says `thermo: yes` or the user asks.
+  2. One shared fix round for both finding lists, then one follow-up run (`execute-plan`, section "Review cuts", says when a plan drops it).
+  3. `thermo-nuclear-code-quality-review` on the triggers that skill names; a roadmap entry is none.
   4. `retro` and `config-sync` only on their triggers (see each skill).
 - **L, then:** the order as written in steps 8 to 12; every step runs.
 
@@ -124,6 +124,7 @@ Write the section per the template below, then three more things:
 - **Set `Jetzt` and `Als Nächstes`** to the first phase and its first action.
 - **Set `Aktuelle Bauphase`** to text that appears in that phase's heading. The SessionStart hook injects only the roadmap head and that one section; set it wrong and the next session works from the wrong phase without anything failing.
 - **Mark step 11 in the setup table** as done.
+- **Point the roadmap at the ritual, do not copy the gate order into it.** A phase line says "gates per the ritual in `plan-build`"; a copied order drifts from the ritual and the two then contradict each other.
 
 ## Re-running
 

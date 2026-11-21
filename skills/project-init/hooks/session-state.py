@@ -61,6 +61,7 @@ MAX_SECTION_CHARS = 7000
 
 MARKER = re.compile(r"^\*\*Aktuelle Bauphase:\*\*\s*(.+?)\s*$", re.MULTILINE)
 HEADING = re.compile(r"^(#{2,6})\s+(.*)$")
+REPORT_PARTS = ("bericht", "review", "handlauf", "retro", "thermo", "config-sync")
 
 
 def read_file(path):
@@ -167,6 +168,31 @@ def state_path(project_dir):
     return os.path.join(project_dir, ".claude", "state.md")
 
 
+def newer_reports(project_dir, state_file):
+    """Berichte in .claude/plans/, die neuer sind als der Laufzustand.
+
+    Ein Bericht traegt einen der Namensteile in REPORT_PARTS; eine Plandatei
+    ohne diese Teile zaehlt nicht.
+    """
+    plans_dir = os.path.join(project_dir, ".claude", "plans")
+    try:
+        limit = os.path.getmtime(state_file)
+        names = os.listdir(plans_dir)
+    except OSError:
+        return []
+    found = []
+    for name in sorted(names):
+        lower = name.lower()
+        if not lower.endswith(".md") or not any(part in lower for part in REPORT_PARTS):
+            continue
+        try:
+            if os.path.getmtime(os.path.join(plans_dir, name)) > limit:
+                found.append(name)
+        except OSError:
+            continue
+    return found
+
+
 def run_summary(project_dir):
     """Kurzfassung des neuesten Laufzustands in .claude/run/*.md, sonst None."""
     run_dir = os.path.join(project_dir, ".claude", "run")
@@ -197,6 +223,12 @@ def run_summary(project_dir):
         lines.append("Phasen-Branch: " + branch.group(1))
     if blocks:
         lines.append("Bloecke: " + "; ".join(blocks))
+    reports = newer_reports(project_dir, os.path.join(run_dir, newest))
+    if reports:
+        lines.append(
+            "Berichte neuer als der Laufzustand (fertige Gate-Schritte, nicht neu starten): "
+            + ", ".join(".claude/plans/" + name for name in reports)
+        )
     lines.append("Weitermachen mit execute-plan Schritt 0")
     return "\n".join(lines)
 

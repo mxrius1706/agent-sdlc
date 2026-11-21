@@ -311,5 +311,133 @@ class P3Main(unittest.TestCase):
         self.assertTrue(os.path.exists(self.out + ".manifest.json"))
 
 
+PLAN_REQ = """# Plan: Testprojekt
+
+## Blocks
+
+| Block | Tasks | Files | Wave | Exclusive |
+|---|---|---|---|---|
+| b1 | a1 | src/a/mod.py | 1 | no |
+
+## Tasks
+
+| Id | Block | Task | Test target (seam) | Requirements |
+|---|---|---|---|---|
+| a1 | b1 | Bestellung pruefen | `pruefe()`: leer | %s |
+
+## Decisions
+
+| Question | Answer | Reason |
+|---|---|---|
+| Format | text | klar |
+
+## Verification
+
+- `python3 -I -m unittest discover -s tests -p 'test_*.py'`
+"""
+
+
+class B6SpecQualifiedRequirements(unittest.TestCase):
+    """t18: Kennungen sind je Spec nummeriert; Spec-Name waehlt, nackte mehrdeutige Kennung waehlt nichts."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = os.path.join(self.tmp.name, "projekt-a")
+        os.makedirs(self.root)
+        self.specs = os.path.join(self.tmp.name, "specs")
+        write(os.path.join(self.specs, "a.md"),
+              "## Abschnitt Alpha\nREQ-001 gilt fuer Alpha.\n" + body("MARKER-SPEC-ALPHA"))
+        write(os.path.join(self.specs, "domain", "b.md"),
+              "## Abschnitt Beta\nREQ-001 gilt fuer Beta.\n" + body("MARKER-SPEC-BETA"))
+        self.out = os.path.join(self.tmp.name, "pack.md")
+
+    def pack(self, cell, specs=None):
+        plan = os.path.join(self.tmp.name, "plan.md")
+        write(plan, PLAN_REQ % cell)
+        code, _, err = run_main([plan, "--block", "b1", "--root", self.root,
+                                 "--specs", specs or self.specs, "--trailer", TRAILER, "--out", self.out])
+        self.assertEqual(0, code, err)
+        with open(self.out + ".manifest.json", encoding="utf-8") as fh:
+            m = json.load(fh)
+        with open(self.out, encoding="utf-8") as fh:
+            return m, fh.read()
+
+    def check_only_alpha(self, cell):
+        m, text = self.pack(cell)
+        inc, exc = ids(m["included"]), ids(m["excluded"])
+        self.assertTrue(any(i.endswith("a.md#Abschnitt Alpha") for i in inc), inc)
+        self.assertFalse(any(i.endswith("b.md#Abschnitt Beta") for i in inc), inc)
+        self.assertTrue(any(i.endswith("b.md#Abschnitt Beta") for i in exc), exc)
+        self.assertIn("MARKER-SPEC-ALPHA", text)
+        self.assertNotIn("MARKER-SPEC-BETA", text)
+
+    def test_t18_spec_name_mit_leerzeichen_waehlt_nur_diese_spec(self):
+        self.check_only_alpha("a REQ-001")
+
+    def test_t18_spec_name_mit_doppelpunkt_waehlt_nur_diese_spec(self):
+        self.check_only_alpha("a:REQ-001")
+
+    def test_t18_spec_name_ist_dateiname_ohne_md_und_gross_klein_egal(self):
+        m, text = self.pack("B REQ-001")
+        inc = ids(m["included"])
+        self.assertTrue(any(i.endswith("b.md#Abschnitt Beta") for i in inc), inc)
+        self.assertNotIn("MARKER-SPEC-ALPHA", text)
+        self.assertIn("MARKER-SPEC-BETA", text)
+
+    def test_t18_nackte_kennung_in_mehreren_specs_ist_mehrdeutig(self):
+        m, text = self.pack("REQ-001")
+        inc, exc = ids(m["included"]), ids(m["excluded"])
+        self.assertFalse(any("Abschnitt Alpha" in i or "Abschnitt Beta" in i for i in inc), inc)
+        self.assertTrue(any(i.endswith("a.md#Abschnitt Alpha") for i in exc), exc)
+        self.assertTrue(any(i.endswith("b.md#Abschnitt Beta") for i in exc), exc)
+        self.assertNotIn("MARKER-SPEC-ALPHA", text)
+        self.assertNotIn("MARKER-SPEC-BETA", text)
+        notes = [n for n in m["notes"] if "REQ-001" in n]
+        self.assertTrue(notes, m["notes"])
+        self.assertTrue(any("ambiguous" in n.lower() and "spec" in n.lower() for n in notes), notes)
+
+    def test_t18_eindeutige_kennung_wird_wie_bisher_gewaehlt(self):
+        write(os.path.join(self.specs, "domain", "b.md"),
+              "## Abschnitt Beta\nREQ-002 gilt fuer Beta.\n" + body("MARKER-SPEC-BETA"))
+        m, text = self.pack("REQ-001")
+        inc = ids(m["included"])
+        self.assertTrue(any(i.endswith("a.md#Abschnitt Alpha") for i in inc), inc)
+        self.assertIn("MARKER-SPEC-ALPHA", text)
+        self.assertNotIn("MARKER-SPEC-BETA", text)
+        self.assertFalse(any("ambiguous" in n.lower() for n in m["notes"]), m["notes"])
+
+
+class B6GlossaryInParentOfSpecs(unittest.TestCase):
+    """t19: GLOSSARY.md im Elternordner eines --specs-Ordners wird gefunden."""
+
+    def test_t19_glossar_im_elternordner_der_specs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = os.path.join(tmp, "projekt-a")
+            os.makedirs(root)
+            kb = os.path.join(tmp, "kb")
+            write(os.path.join(kb, "GLOSSARY.md"),
+                  "## Bestellung\nEine Anfrage eines Kunden an das Lager.\n" + body("MARKER-KB-GLOSS-HIT") +
+                  "\n## Rechnung\nEin Beleg ueber den offenen Betrag.\n" + body("MARKER-KB-GLOSS-MISS"))
+            write(os.path.join(kb, "specs", "s.md"), "## Abschnitt\nREQ-001 gilt.\n" + body("MARKER-KB-SPEC"))
+            plan = os.path.join(tmp, "plan.md")
+            write(plan, PLAN_REQ % "REQ-001")
+            out = os.path.join(tmp, "pack.md")
+            code, _, err = run_main([plan, "--block", "b1", "--root", root, "--specs",
+                                     os.path.join(kb, "specs"), "--trailer", TRAILER, "--out", out])
+            self.assertEqual(0, code, err)
+            with open(out + ".manifest.json", encoding="utf-8") as fh:
+                m = json.load(fh)
+            with open(out, encoding="utf-8") as fh:
+                text = fh.read()
+            self.assertTrue(any(i.endswith("GLOSSARY.md#Bestellung") for i in ids(m["included"])),
+                            m["included"])
+            self.assertTrue(any(i.endswith("GLOSSARY.md#Rechnung") for i in ids(m["excluded"])),
+                            m["excluded"])
+            self.assertIn("MARKER-KB-GLOSS-HIT", text)
+            self.assertNotIn("MARKER-KB-GLOSS-MISS", text)
+            self.assertFalse(any("no glossary found" in n for n in m["notes"]), m["notes"])
+
+
 if __name__ == "__main__":
     unittest.main()

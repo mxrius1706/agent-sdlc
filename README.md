@@ -25,7 +25,7 @@ Der Ausgangspunkt ist eine Beobachtung. Ein Agent, der bei jeder Sitzung bei nul
 | `execute-plan` | Den freigegebenen Plan abarbeiten, Block für Block im eigenen Worktree, bis zu drei parallel. `scripts/context-pack.py` baut je Block ein Paket mit Manifest, das nie abgeschnitten wird |
 | `testing` | Testdisziplin. Zuerst der fehlschlagende Test, Verify Red ist Pflicht. Getestet wird an den Schnittstellen, die der Plan nennt |
 | `handlauf` | Drittes Gate, vor den Code-Gates. Die gebaute Fläche im Browser ansehen und durchklicken, wie ein Nutzer sie erlebt. Eigene Sitzung, kein Review-Input, reiner Bericht |
-| `review-changes` | Erstes Code-Gate am Phasenende. Drei Linsen parallel, Gate-Abgleich, reiner Bericht. `scripts/gate-precheck.py` prüft vorher mechanisch Befehle, Trailer, Dateigrößen und Verweisziele |
+| `review-changes` | Erstes Code-Gate am Phasenende. Linsen parallel (Spec-Treue und Struktur immer, Sicherheit nach Flag `security`, Stufe L oder Wunsch), Gate-Abgleich, reiner Bericht. `scripts/gate-precheck.py` prüft vorher mechanisch Befehle, Trailer, Dateigrößen und Verweisziele |
 | `thermo-nuclear-code-quality-review` | Zweites Gate. Fragt nicht ob der Code richtig ist, sondern ob er wartbar bleibt |
 | `retro` | Nach der Phase: Was hat die Arbeit schwer gemacht? Mechanisches wird ein Check, Urteilsfragen werden Regeln für die Reviewer. Ändert die Umgebung, nicht den Code |
 | `config-sync` | Die Konfiguration gegen ihre vier Autoritäten prüfen und die Drift nachziehen. `scripts/ref-check.py` prüft vorab, ob Pfade in Backticks existieren |
@@ -76,13 +76,13 @@ Damit gilt es in jedem Projekt. Soll es nur für eines gelten, geht es nach `.cl
 
 **Keine Projektkopien einzelner Skills.** Ein Ordner unter `.claude/skills/` mit dem Namen eines globalen Skills überdeckt ihn, und Updates kommen dort nicht mehr an. Was ein Skill über ein Projekt wissen muss, steht als Zeile im Abschnitt `## Project references` der Wurzel-`CLAUDE.md`; wie das funktioniert, steht in [LOOP.md](LOOP.md).
 
-**Rollen für `execute-plan`:** Die Agentendefinitionen in `agents/` (`acceptance-writer`, `block-implementer`, `block-reviewer`, `block-fixer`, `gate-reviewer`) gehören nach `~/.claude/agents/`:
+**Rollen für `execute-plan`:** Die Agentendefinitionen in `agents/` (`acceptance-writer`, `block-implementer`, `block-reviewer`, `block-fixer`, `gate-reviewer`) gehören je Projekt nach `<projekt>/.claude/agents/`. Jedes Konto hat ein eigenes Konfigurationsverzeichnis, `~/.claude/agents/` wird nicht gefunden:
 
 ```bash
-mkdir -p ~/.claude/agents && cp agent-sdlc/agents/*.md ~/.claude/agents/
+mkdir -p <projekt>/.claude/agents && cp agent-sdlc/agents/*.md <projekt>/.claude/agents/
 ```
 
-Neue Dateien sieht Claude Code erst nach einem Neustart der Sitzung. Fehlt eine Rolle, fällt `execute-plan` auf `general-purpose` mit ausdrücklichem Modell zurück.
+Neue Agentendateien sieht Claude Code erst nach einem Neustart der Sitzung. Fehlt eine Rolle, fällt `execute-plan` auf `general-purpose` mit ausdrücklichem Modell zurück.
 
 **Prüfen:** In Claude Code `/project-init` tippen. Erscheint der Skill nicht, Sitzung neu starten.
 

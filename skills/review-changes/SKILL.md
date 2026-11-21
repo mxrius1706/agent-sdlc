@@ -1,6 +1,6 @@
 ---
 name: review-changes
-description: "Review open or phase changes against specs, accepted decisions and the project's own patterns, in three parallel lenses (security, spec fidelity, structure), and check the phase gate item by item. Use before a commit or push, at the end of a build phase, or when asked whether changes are sound or ready to release, even without the word review."
+description: "Review open or phase changes against specs, accepted decisions and the project's own patterns, in parallel lenses (spec fidelity, structure, and security when the plan asks for it), and check the phase gate item by item. Use before a commit or push, at the end of a build phase, or when asked whether changes are sound or ready to release, even without the word review."
 ---
 
 # Review Changes
@@ -45,11 +45,13 @@ python3 -I <skill-dir>/scripts/gate-precheck.py --base <base> --head HEAD --cmd 
 - **Fix every FAIL** before any reviewer starts. A FAIL is a trailer, size, link or command defect that costs a model nothing to find.
 - **Read the last line:** `thermo: yes (<reason>)` means a file crossed the size limit and `thermo-nuclear-code-quality-review` runs; `thermo: no` leaves it to the stage and the user.
 
-## Phase 1: Three lenses, in parallel
+## Phase 1: The lenses, in parallel
 
 Depth comes from **one lens per head**.
 
-**Up to about thirty files, split by concern.** Three reviewers in parallel, each seeing all files through one lens:
+**The security lens runs** when the plan carries the depth flag `security` (set in `planning` via `plan-check.py`), at stage L, or when the user asks. Otherwise the pre-check (`gate-precheck.py`, secrets, trailer) covers the mechanical part, and the spec and structure lenses run on. This holds for every plan; the plan's flag is the switch.
+
+**Up to about thirty files, split by concern.** One reviewer per lens that runs, in parallel, each seeing all files through its lens:
 
 | Lens | Question |
 |---|---|
@@ -57,7 +59,7 @@ Depth comes from **one lens per head**.
 | **Spec fidelity** | Line against document: requirements met, contracts kept, acceptance criteria achievable? Open point silently decided? Accepted decision violated? |
 | **Structure** | Does it fit the house? Existing patterns, naming, error catalogue, edge cases, state transitions, query behaviour, dead code, tests, front/back contract. Plus the standards, glossary and smell baseline below |
 
-**Above thirty files, split by cluster.** One reviewer per area carries all three lenses over its own files; the file sets are disjoint, so nothing needs deduplicating.
+**Above thirty files, split by cluster.** One reviewer per area carries all lenses that run over its own files; the file sets are disjoint, so nothing needs deduplicating. Up to thirty files the review stays whole; a cut below that needs one sentence of reason in the run state. This is the one cluster rule; other skills point here.
 
 Use full-reading agents: exploits and contracts need the whole file, and what is missing usually lies outside an excerpt.
 
@@ -112,7 +114,7 @@ A finding in the top two bands may be a class of defect rather than an incident.
 
 ## Follow-up run
 
-After a round of fixes, the next run is a **follow-up run**. After one shared fix round (findings of this review and of `handlauf` together) exactly one follow-up run follows. Its input is the fix diff (`git diff <commit the last report names>...HEAD`) and the last report's findings, and one reviewer on `sonnet` carries all three lenses over it. It answers two things:
+After a round of fixes, the next run is a **follow-up run**. After one shared fix round (findings of this review and of `handlauf` together) exactly one follow-up run follows (unless a cut of `execute-plan`, section "Review cuts", drops it). Its input is the fix diff (`git diff <commit the last report names>...HEAD`) and the last report's findings, and one reviewer on `sonnet` carries the lenses the plan runs over it. It answers two things:
 
 1. **Per previous finding:** fixed or not, judged against the finding as written, with the location of the fix.
 2. **New findings in the fix diff.** Those in the top four bands count as findings. Informational ones are collected in the report and open no further fix round.
