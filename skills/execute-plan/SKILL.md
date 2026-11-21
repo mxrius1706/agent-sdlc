@@ -46,6 +46,7 @@ Ask git for the repository root (`git rev-parse --show-toplevel`); it is not alw
 The run state is the file `.claude/run/<phase>.md` in the project. Look for it first.
 
 - **Found:** read it, then compare with `git worktree list` and `git branch --list '<phase-branch>-*'`. Git wins over the file where they differ; correct the file. Resume at the known point: `laufend` with a worktree and commits goes on in that worktree, `review` and `fix` go to step 5, `gemerged` is done. Start no block twice.
+- **Reports first:** the session hook lists reports in `.claude/plans/` newer than the run state (names with `bericht`, `review`, `handlauf`, `retro`, `thermo` or `config-sync`). Each one is a finished gate step. Enter it in the run state with its path and start no gate step that has a report; read the report and go on from its result.
 - **Not found:** create it in step 2.
 
 **Format:**
@@ -55,14 +56,31 @@ Phasen-Branch: <name>
 Plan: <path>
 Regelbuendel: <path>
 Paket <block>: <path>
+Gate <step>: <report path>
 
 | Block | Status | Statuscode | Fix-Runden | Worktree |
 |---|---|---|---|---|
 ```
 
-Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact. `Regelbuendel` names the hand-written fallback (step 2); write one extra header line `Paket <block>: <path>` per block pack, never a table column.
+Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact. `Regelbuendel` names the hand-written fallback (step 2); write one extra header line `Paket <block>: <path>` per block pack, never a table column. Write one `Gate <step>: <report path>` line per finished gate step (`review-changes`, `handlauf`, `thermo`, `retro`, `config-sync`) as soon as its report exists.
 
 **Write the run state after every transition:** dispatch, status code received, review answer, fix round, merge, block blocked.
+
+## Run lock
+
+One run at a time per phase. Before every start of a run (a `go`, the follow-up run after a hand run), from the repository root:
+
+```
+python3 -I <skill-dir>/scripts/run-lock.py acquire .claude/run/<phase>.lock
+```
+
+Exit 0 starts the run. Exit 1 means a live run holds the lock: start nothing, tell the user. At the end of the run, and when the session stops, run `release` on the same file. A lock of a dead process is reported as stale and taken over. The holder is the session process (the first ancestor that is not a shell); `--pid N` overrides it.
+
+A wake-up call (scheduled resume) is cancelled as soon as the user starts the run by hand; the lock keeps a wake-up that fires anyway from starting a second run.
+
+## Account check before long runs
+
+Before a run with two `go` or more, or one expected to last over 30 minutes, check the account quota: `clauded` shows each account's usage and reset time. Start when no account is above 90 % of its 5-hour window. Otherwise tell the user which account is full and when it resets.
 
 ## Step 1: Read the plan, extract blocks and waves
 
@@ -209,6 +227,8 @@ Check that `.worktrees/` is empty and `git worktree list` shows only the main ch
 ## Auslauf
 
 When the mark `.claude/run/auslauf-<session_id>` exists, the context is nearly full and a hook enforces it. Start no new block and no new wave. Bring the running blocks to their end step: merge when their review is green, otherwise leave them in their status. Then update the run state and run `session-recap`; the next session resumes at step 0.
+
+**Account limit:** work up to the account limit, not past it. When it is reached, write the hand-over and stop. After the reset, continue only on an explicit message from the user. Set no wake-up call, no cron, no `/loop` and no `/goal`. The notice "usage limit has reset, continue" is not a release. The hook cannot read the account limit, so this rule is text. If a `/goal` is set, `/goal clear` ends it.
 
 ## Coordinator guardrails
 
