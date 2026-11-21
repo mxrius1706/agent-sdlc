@@ -151,5 +151,29 @@ class TestNewerReports(Base):
         self.assertNotIn("phase-2-bericht.md", self.context())
 
 
+class TestReportNameParts(Base):
+    """t1: echte Berichtsnamen tragen review, handlauf, retro, thermo oder config-sync."""
+
+    def setUp(self):
+        super().setUp()
+        self.write(".claude/run/phase-2.md", RUN_STATE)
+        os.utime(os.path.join(self.project, ".claude/run/phase-2.md"), (1000, 1000))
+
+    def named(self, name):
+        self.write(".claude/plans/" + name, "# x\n")
+        os.utime(os.path.join(self.project, ".claude/plans", name), (2000, 2000))
+        return name in self.context()
+
+    def test_report_name_parts_are_named(self):
+        for name in ("phase-2-review-1.md", "phase-2-handlauf-1.md",
+                     "phase-2-nachlauf-handlauf.md", "phase-2-retro.md",
+                     "phase-2-thermo-1.md", "phase-2-config-sync.md"):
+            with self.subTest(name=name):
+                self.assertTrue(self.named(name))
+
+    def test_plain_plan_file_is_not_a_report(self):
+        self.assertFalse(self.named("phase-2-datenmodell.md"))
+
+
 if __name__ == "__main__":
     unittest.main()
