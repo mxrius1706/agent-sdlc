@@ -76,13 +76,13 @@ Damit gilt es in jedem Projekt. Soll es nur für eines gelten, geht es nach `.cl
 
 **Keine Projektkopien einzelner Skills.** Ein Ordner unter `.claude/skills/` mit dem Namen eines globalen Skills überdeckt ihn, und Updates kommen dort nicht mehr an. Was ein Skill über ein Projekt wissen muss, steht als Zeile im Abschnitt `## Project references` der Wurzel-`CLAUDE.md`; wie das funktioniert, steht in [LOOP.md](LOOP.md).
 
-**Rollen für `execute-plan`:** Die Agentendefinitionen in `agents/` (`acceptance-writer`, `block-implementer`, `block-reviewer`, `block-fixer`, `gate-reviewer`) gehören nach `~/.claude/agents/`:
+**Rollen für `execute-plan`:** Die Agentendefinitionen in `agents/` (`acceptance-writer`, `block-implementer`, `block-reviewer`, `block-fixer`, `gate-reviewer`) gehören je Projekt nach `<projekt>/.claude/agents/`. Jedes Konto hat ein eigenes Konfigurationsverzeichnis, `~/.claude/agents/` wird nicht gefunden:
 
 ```bash
-mkdir -p ~/.claude/agents && cp agent-sdlc/agents/*.md ~/.claude/agents/
+mkdir -p <projekt>/.claude/agents && cp agent-sdlc/agents/*.md <projekt>/.claude/agents/
 ```
 
-Neue Dateien sieht Claude Code erst nach einem Neustart der Sitzung. Fehlt eine Rolle, fällt `execute-plan` auf `general-purpose` mit ausdrücklichem Modell zurück.
+Neue Agentendateien sieht Claude Code erst nach einem Neustart der Sitzung. Fehlt eine Rolle, fällt `execute-plan` auf `general-purpose` mit ausdrücklichem Modell zurück.
 
 **Prüfen:** In Claude Code `/project-init` tippen. Erscheint der Skill nicht, Sitzung neu starten.
 

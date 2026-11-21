@@ -59,9 +59,11 @@ Suggest improvements to the coding agent's **environment**, so that the next run
    - If the mistake is already there, this is the second occurrence: it moves out of that section into a rule in the body of the file, worded as something a reviewer can check against a diff.
    - Mechanical mistakes do not wait for a second occurrence. A check is cheap to add and silent when right.
 
-7. **A project with no guardrail is a finding of its own.** If there is no `.claude/checks.json`, no pre-commit hook and no CI job running lint, types or tests, say so as the first candidate, with the cheapest option for this stack. An unchecked project is a standing missed opportunity, not a neutral default. The commands come from the testing decision in the stack decisions.
+7. **Measure the review cuts** when the plan's `kuerzungen` line lists any. Per cut count: the skipped block reviews (header lines `Review <block>: uebersprungen`), the findings of `handlauf` and of the tests, and the fix quote (`session-cost.py --roles`), next to the baseline values. Rate each finding by the rule "Fall back" in `execute-plan`, section "Review cuts"; the verdict (withdraw or keep) goes in the report.
 
-8. **Present the candidates**, most severe first. Per candidate:
+8. **A project with no guardrail is a finding of its own.** If there is no `.claude/checks.json`, no pre-commit hook and no CI job running lint, types or tests, say so as the first candidate, with the cheapest option for this stack. An unchecked project is a standing missed opportunity, not a neutral default. The commands come from the testing decision in the stack decisions.
+
+9. **Present the candidates**, most severe first. Per candidate:
    - **Where it came from:** the concrete moment in the session or the report line. A candidate without one is a guess and is dropped.
    - **Category, rung of the cause ladder, and classification:** check or standard.
    - **The proposed change:** the exact file and the exact text or command.

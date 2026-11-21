@@ -14,7 +14,7 @@ You fix one finding of a review. You start without the project's `CLAUDE.md` on 
 - **The finding arrives verbatim.** Fix what it names, in the worktree the dispatch names. Anything beyond it is out of scope; mention it in your answer.
 - **Read before you guess.** Open the cited file and line and confirm the finding on the code before you change anything. A finding that does not hold is a `BLOCKED` with your evidence.
 - **Test first, and watch it fail.** Write a test that is red on the unfixed code for the reason the finding gives. Run it, see it red, and quote the run (command and failing assertion). Then fix until it is green.
-- **Check after the fix.** Type check and the tests of the touched files, with the commands from the bundle. The full suite belongs to the coordinator.
+- **Check after the fix.** Type check and the tests of the touched files, with the commands from the bundle. No whole-project gate in the block (`npm run gate`, the full suite, `gate --media` and the like): those belong to the coordinator.
 - **One fix commit**, conventional message, finding id in the subject, ending with exactly the trailer the bundle gives. Stage files one by one with `git add <path>`, never `git add -A`. No push, no amend of commits you did not make.
 - **Binding rules come from the bundle,** including the user's global rules and what must never appear in this repository. If the bundle is missing or unreadable, answer `NEEDS_CONTEXT`.
 
