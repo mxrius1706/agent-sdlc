@@ -5,7 +5,7 @@ Aufruf:
   gate-precheck.py --base <ref> [--head <ref>] [--root <dir>]
                    [--cmd "<befehl>" ...] [--trailer "<zeile>"] [--size-limit N]
 
-Prueft ohne Modell: Befehle (--cmd, ohne Shell), Trailer je Commit,
+Prueft ohne Modell: Befehle (--cmd, ohne Shell, `|` als Pipe), Trailer je Commit,
 Dateigroesse, relative Markdown-Links. Nur Standardbibliothek.
 """
 import argparse
@@ -25,24 +25,48 @@ def tail(text, n=TAIL_LINES):
     return "\n".join(rows[-n:])
 
 
+def split_pipe(argv):
+    """Teilt eine Argumentliste an den Einzelwoertern `|` in Stufen."""
+    stages = [[]]
+    for word in argv:
+        if word == "|":
+            stages.append([])
+        else:
+            stages[-1].append(word)
+    return stages
+
+
 def run_one(cmd, root):
-    """Fuehrt einen Befehl ohne Shell aus, gibt (status, check, detail) zurueck."""
+    """Fuehrt einen Befehl ohne Shell aus (`|` wird als Pipe aufgeloest), gibt (status, check, detail) zurueck.
+
+    Bei einer Pipe zaehlt der erste Exit-Code ungleich 0 (wie pipefail); die Ausgabe
+    stammt aus der letzten Stufe, dazu die Fehlerausgabe aller Stufen.
+    """
     check = "cmd `%s`" % cmd
     try:
         argv = shlex.split(cmd)
     except ValueError as exc:
         return ("FAIL", check, "Befehl nicht lesbar: %s" % exc)
-    if not argv:
+    stages = split_pipe(argv)
+    if not argv or any(not st for st in stages):
         return ("FAIL", check, "leerer Befehl")
-    try:
-        res = subprocess.run(argv, cwd=root, capture_output=True, text=True,
-                             errors="replace")
-    except OSError as exc:
-        return ("FAIL", check, "nicht ausfuehrbar: %s" % exc)
-    if res.returncode == 0:
+    data = None
+    code = 0
+    errors = []
+    for st in stages:
+        try:
+            res = subprocess.run(st, cwd=root, capture_output=True, errors="replace",
+                                 input=data, text=True)
+        except OSError as exc:
+            return ("FAIL", check, "nicht ausfuehrbar: %s" % exc)
+        if res.returncode != 0 and code == 0:
+            code = res.returncode
+        errors.append(res.stderr)
+        data = res.stdout
+    if code == 0:
         return ("PASS", check, "Exit 0")
-    out = tail(res.stdout + "\n" + res.stderr)
-    return ("FAIL", check, "Exit %d\n%s" % (res.returncode, out))
+    out = tail(data + "\n" + "\n".join(errors))
+    return ("FAIL", check, "Exit %d\n%s" % (code, out))
 
 
 def run_checks(cmds, root):
