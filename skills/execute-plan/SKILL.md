@@ -127,7 +127,7 @@ A bare `worktree add` is not buildable. For dependencies, environment file, untr
 
 The database and the dev port belong to the main checkout: a worktree starts no dev server and applies no migration.
 
-Before opening the third worktree, check free memory. Three implementers plus their type checks can exhaust a 16 GB machine, and then the parallelism has cost more than it bought.
+Before opening the second and the third worktree, check the load and the free memory: the 1-minute load average (`uptime`) must stay below the core count (`sysctl -n hw.ncpu`, on Linux `nproc`). At or above it, open no further worktree and run the blocks one at a time; more parallel blocks only queue for the processor and the whole run gets slower. Three implementers plus their type checks can also exhaust a 16 GB machine. Look at what else is running when the load is high (`ps -Ao pcpu,etime,comm -r | head`) and tell the user what to stop; it is usually not the blocks.
 
 ## Step 4: Dispatch the acceptance writer and the implementer
 
