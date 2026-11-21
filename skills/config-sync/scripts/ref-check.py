@@ -3,8 +3,10 @@
 
     python3 -I ref-check.py <datei.md> ... [--root <ordner>]
 
-Ein Token gilt als Pfad, wenn es "/" enthaelt oder auf eine bekannte Endung endet, nicht mit
-http, /, ~, $ oder - beginnt und keines von < > * ? { } | ( ) Leerzeichen enthaelt. Aufgeloest
+Ein Token gilt als Pfad, wenn es "/" enthaelt (ein Dateiname ohne Ordner ist keiner), nicht mit
+http, /, ~, $, -, + oder @ beginnt und keines von < > * ? { } | ( ) Leerzeichen enthaelt. Keine
+Pfade sind ausserdem Wissensbasis-Pfade (specs/), Medientypen (application/json), Branch-Namen
+(phase-3/..., refs/heads/...). Aufgeloest
 wird gegen --root (Standard: Ordner der Datei) und gegen den Ordner der Datei.
 Ausgabe je fehlendem Pfad: MISSING <datei>:<zeile> <token>. Zusaetzlich GATE-ORDER <datei>:<zeile>,
 wenn eine Zeile `review-changes` und darauf (gleiche oder naechste Zeile) `thermo` nennt: das ist
@@ -16,8 +18,9 @@ import os
 import re
 import sys
 
-EXTS = (".md", ".py", ".json", ".sh", ".ts", ".js", ".yml", ".yaml", ".toml")
-BAD_START = ("http", "/", "~", "$", "-")
+BAD_START = ("http", "/", "~", "$", "-", "+", "@", "specs/", "refs/")
+MEDIA_TYPES = ("application/", "text/", "image/", "audio/", "video/", "multipart/", "font/")
+BRANCH = re.compile(r"phase-\w+/")
 BAD_CHARS = set("<>*?{}|() \t")
 TOKEN = re.compile(r"(?<!`)`([^`\n]+)`(?!`)")
 
@@ -26,7 +29,9 @@ def looks_like_path(tok):
     """Sieht das Token wie ein relativer Pfad aus?"""
     if tok.startswith(BAD_START) or BAD_CHARS & set(tok):
         return False
-    return "/" in tok or tok.endswith(EXTS)
+    if tok.startswith(MEDIA_TYPES) or BRANCH.match(tok):
+        return False
+    return "/" in tok
 
 
 def check_file(path, root):
