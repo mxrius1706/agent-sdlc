@@ -56,13 +56,14 @@ Phasen-Branch: <name>
 Plan: <path>
 Regelbuendel: <path>
 Paket <block>: <path>
+Review <block>: uebersprungen
 Gate <step>: <report path>
 
 | Block | Status | Statuscode | Fix-Runden | Worktree |
 |---|---|---|---|---|
 ```
 
-Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact. `Regelbuendel` names the hand-written fallback (step 2); write one extra header line `Paket <block>: <path>` per block pack, never a table column. Write one `Gate <step>: <report path>` line per finished gate step (`review-changes`, `handlauf`, `thermo`, `retro`, `config-sync`) as soon as its report exists.
+Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact. `Regelbuendel` names the hand-written fallback (step 2); write one extra header line `Paket <block>: <path>` per block pack, never a table column. The same holds for a skipped block review ("Review cuts", cut 1): the header line `Review <block>: uebersprungen`, no status value. Write one `Gate <step>: <report path>` line per finished gate step (`review-changes`, `handlauf`, `thermo`, `retro`, `config-sync`) as soon as its report exists.
 
 **Write the run state after every transition:** dispatch, status code received, review answer, fix round, merge, block blocked.
 
@@ -205,7 +206,7 @@ In the order blocks finish.
 
 ## Step 7: Close the plan
 
-All waves merged and green: hand over to the phase gate. The stage in the plan decides its shape. The reviews keep their full depth. The whole-phase review is dispatched as `gate-reviewer`.
+All waves merged and green: hand over to the phase gate. The stage in the plan decides its shape. Reviews keep their full depth unless the plan's `kuerzungen` line ("Review cuts") or the security rule of `review-changes` says otherwise. The whole-phase review is dispatched as `gate-reviewer`.
 
 **Run the gate without asking.** Work the steps below one after the other and report once at the end. Stop only for: `handlauf` (the user starts it), the release go, a `BLOCKED` block, the Auslauf mark, or a decision only the user can make. "Shall I run the next step?" is not a stop. A plan without a stage (written before `plan-check.py`) is treated as stage M.
 
@@ -213,9 +214,9 @@ All waves merged and green: hand over to the phase gate. The stage in the plan d
 
 **Stages S and M:**
 
-1. `review-changes` runs here while the user runs `handlauf` in a session of their own at the same time. Its phase reviewers are cut as `review-changes` says (clusters from about thirty files, one rule, owned there); one review per cluster otherwise only with one sentence of reason in the run state.
+1. `review-changes` runs here while the user runs `handlauf` in a session of their own at the same time. Its phase reviewers are cut as `review-changes` says (the cluster rule is owned there).
 2. One shared fix round takes both finding lists, bundled by pattern as in "Bundled findings". Then exactly one follow-up run (cuts 2 and 3 of "Review cuts" may drop it).
-3. `thermo-nuclear-code-quality-review` runs when the precheck's last line says `thermo: yes`, at stage L, or when the user asks. Any other trigger (for example "many lines since the last run") counts only when the session names it to the user in one sentence and the user agrees; an entry in a project roadmap is no trigger.
+3. `thermo-nuclear-code-quality-review` runs on the triggers that skill names.
 4. `retro` runs when the fix quote is above 0.3, a finding of the top two severity bands appeared, or the user asks. `config-sync` runs when `ref-check.py` (in `config-sync`'s `scripts/`) reports a missing path or a decision changed.
 
 **Stage L:** after the precheck the order of `plan-build` stands (gate checklist, full suite, `handlauf` where there is an interface, `review-changes`, `thermo-nuclear-code-quality-review`, report), and `thermo-nuclear-code-quality-review` always runs.
@@ -228,13 +229,15 @@ Check that `.worktrees/` is empty and `git worktree list` shows only the main ch
 
 A trial, switched per plan by the line `kuerzungen` in the plan's Decisions: a list of `1`, `2`, `3`, or `keine`. Without the line the flow above stands unchanged.
 
-- **1: block review only for risk.** Step 5 runs for blocks marked `risk` in the plan (a column or a note in the Blocks table) and at stage L. Any other block rests on its tests, the pre-check and the gate; enter the skipped review in the run state as `uebersprungen`.
+- **1: block review only for risk.** Step 5 runs for blocks marked `risk` in the plan (a column or a note in the Blocks table) and at stage L. Any other block rests on its tests, the pre-check and the gate; enter the skipped review as the header line `Review <block>: uebersprungen`.
 - **2: no reviewer follow-up after a fix round** (steps 5 and 7) when every finding had a red test and the pre-check is green. A finding of the top two severity bands (exploitable or data-destroying; breaks a binding rule) gets the follow-up run anyway.
 - **3: one gate review per phase.** A follow-up run of `review-changes` only after a finding of the top two bands.
 
-**Measure each cut.** `retro` counts, per cut, the skipped reviews, the findings of `handlauf` and the tests in the phase, and the fix quote (`session-cost.py --roles`), next to the baseline values.
+Cuts 2 and 3 both act on step 7 and apply together: the follow-up runs only when neither lets it drop.
 
-**Fall back.** When `handlauf` or a test finds a top-two-band finding in the phase that the skipped review should have found by the plan, the cut is withdrawn: strike its number from `kuerzungen` and give the reason in the report.
+**Measure each cut.** `retro` counts it (see its step "Measure the review cuts"), next to the baseline values.
+
+**Fall back.** `retro` rates every finding of `handlauf` and of the tests. It counts as one the skipped review would have found when it touches a file in the diff of the skipped block and a lens of the block review (spec or quality, by the pack's checklist) could have named it. Severity is the four steps of step 5; the top two block. One such blocking finding withdraws the cut: strike its number from `kuerzungen` and give the reason in the report.
 
 ## Auslauf
 
