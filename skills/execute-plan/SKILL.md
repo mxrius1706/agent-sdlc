@@ -78,6 +78,10 @@ Exit 0 starts the run. Exit 1 means a live run holds the lock: start nothing, te
 
 A wake-up call (scheduled resume) is cancelled as soon as the user starts the run by hand; the lock keeps a wake-up that fires anyway from starting a second run.
 
+## Account check before long runs
+
+Before a run with two `go` or more, or one expected to last over 30 minutes, check the account quota: `clauded` shows each account's usage and reset time. Start when no account is above 90 % of its 5-hour window. Otherwise tell the user which account is full and when it resets.
+
 ## Step 1: Read the plan, extract blocks and waves
 
 Once, completely: context, goal, decisions, critical files, blocks, waves, tests, verification, out of scope. The blocks and tasks tables carry blocks, task ids, files, waves and test targets.
