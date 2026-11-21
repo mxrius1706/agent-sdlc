@@ -110,5 +110,46 @@ class TestRunSummary(Base):
         self.assertNotIn("phase/alt", text)
 
 
+class TestNewerReports(Base):
+    """t1: Berichte in .claude/plans/, die neuer sind als der Laufzustand."""
+
+    def setUp(self):
+        super().setUp()
+        self.write(".claude/run/phase-2.md", RUN_STATE)
+        self.state_file = os.path.join(self.project, ".claude/run/phase-2.md")
+        os.utime(self.state_file, (1000, 1000))
+
+    def report(self, name, mtime):
+        self.write(".claude/plans/" + name, "# Bericht\n")
+        os.utime(os.path.join(self.project, ".claude/plans", name), (mtime, mtime))
+
+    def test_newer_report_is_named(self):
+        self.report("phase-2-bericht.md", 2000)
+        ctx = self.context()
+        self.assertIn("phase-2-bericht.md", ctx)
+        self.assertIn("Weitermachen mit execute-plan Schritt 0", ctx)
+
+    def test_no_report_no_mention(self):
+        self.write(".claude/plans/phase-2.md", "# Plan\n")
+        os.utime(os.path.join(self.project, ".claude/plans/phase-2.md"), (2000, 2000))
+        self.assertNotIn("plans/", self.context())
+
+    def test_older_report_not_named(self):
+        self.report("phase-1-bericht.md", 500)
+        self.assertNotIn("phase-1-bericht.md", self.context())
+
+    def test_only_newer_of_two_reports(self):
+        self.report("phase-1-bericht.md", 500)
+        self.report("phase-2-bericht.md", 2000)
+        ctx = self.context()
+        self.assertIn("phase-2-bericht.md", ctx)
+        self.assertNotIn("phase-1-bericht.md", ctx)
+
+    def test_without_run_state_nothing_to_compare(self):
+        os.remove(self.state_file)
+        self.report("phase-2-bericht.md", 2000)
+        self.assertNotIn("phase-2-bericht.md", self.context())
+
+
 if __name__ == "__main__":
     unittest.main()

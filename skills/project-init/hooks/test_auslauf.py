@@ -160,6 +160,28 @@ class TestThresholds(Base):
         self.assertFalse(os.path.exists(self.mark()))
 
 
+class TestGoalClear(Base):
+    """t5: bei gesetzter Auslauf-Marke nennt die Ausgabe `/goal clear`."""
+
+    def run_prompt(self, tokens):
+        self.set_fill(tokens)
+        return self.call("UserPromptSubmit", prompt="hallo")
+
+    def test_instruction_names_goal_clear(self):
+        self.assertIn("/goal clear", self.run_prompt(650000).stdout)
+
+    def test_emergency_names_goal_clear(self):
+        self.assertIn("/goal clear", self.run_prompt(850000).stdout)
+
+    def test_posttooluse_names_goal_clear(self):
+        self.set_fill(650000)
+        out = json.loads(self.call("PostToolUse", tool_name="Bash").stdout)
+        self.assertIn("/goal clear", out["hookSpecificOutput"]["additionalContext"])
+
+    def test_below_threshold_no_hint(self):
+        self.assertNotIn("/goal clear", self.run_prompt(100000).stdout)
+
+
 class TestPreToolUse(Base):
     def agent(self, prompt, **extra):
         return self.call("PreToolUse", tool_name="Agent",
