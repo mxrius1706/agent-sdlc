@@ -24,6 +24,8 @@ Suggest improvements to the coding agent's **environment**, so that the next run
 
    The **fix quote** from `session-cost.py --roles` is a mandatory number: it opens the report, with the value of the phase before it for comparison.
 
+   Without build agents the fix quote is computed from the commits of the main session (`fix` against every other type); if neither exists, the line names the reason. Agents of `handlauf` have their own row in the role table. **Check for duplicate work** while reading the table: the same role with the same assignment more than once is a finding.
+
    The reports say what went wrong; the session says why it was hard; the numbers say what it cost.
 
 3. **Look for candidates** in these categories. Each has a trigger; without the trigger, skip the category.

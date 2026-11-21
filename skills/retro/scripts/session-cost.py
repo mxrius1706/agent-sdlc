@@ -77,6 +77,7 @@ def secs(t):
 
 
 # Reihenfolge der Rollenregeln, vom spezifischsten zum allgemeinsten, erste Treffer-Regel gewinnt:
+#  0. handlauf     (Typ handlauf oder Beschreibung beginnt mit Handlauf) - vor allen, auch vor den Pruefwoertern
 #  1. gate-review  (gate/thermo/phase plus Pruefwort)           - vor block-review, weil "block" auch im Gate-Text vorkommt
 #  2. gate-fix     (fix plus gate/thermo/umbau/phase)           - vor block-fix, sonst gewinnt eine Block-Id im Text
 #  3. spec         (konsistenz, spec, backflow, rueckfluss, adr) - vor block-review, "Review Konsistenz" ist Spec-Arbeit
@@ -91,7 +92,7 @@ SPEC_WORDS = r"konsistenz|\bspecs?\b|backflow|rueckfluss|\badr\b"
 
 
 TYPE_ROLES = {"gate-reviewer": "gate-review", "block-reviewer": "block-review", "block-fixer": "block-fix",
-              "block-implementer": "build", "acceptance-writer": "build"}
+              "block-implementer": "build", "acceptance-writer": "build", "handlauf": "handlauf"}
 
 
 def classify_role(description, agent_type=None):
@@ -99,6 +100,8 @@ def classify_role(description, agent_type=None):
     if agent_type in TYPE_ROLES:
         return TYPE_ROLES[agent_type]
     d = (description or "").lower()
+    if d.startswith("handlauf"):
+        return "handlauf"
     has = lambda *words: any(w in d for w in words)
     reviewing = re.search(REVIEW_WORDS, d)
     if has("gate", "thermo", "phase") and reviewing:
@@ -118,7 +121,7 @@ def classify_role(description, agent_type=None):
     return "other"
 
 
-ROLES = ["build", "block-review", "block-fix", "gate-review", "gate-fix", "spec", "research", "other"]
+ROLES = ["build", "block-review", "block-fix", "gate-review", "gate-fix", "spec", "handlauf", "research", "other"]
 
 
 def role_table(data):
@@ -141,13 +144,52 @@ def fix_quote(rows):
     return round((by["block-fix"] + by["gate-fix"]) / by["build"], 2)
 
 
+COMMIT_RE = re.compile(r"git commit\b[^\n]*?-m\s+(?:\"\$\(cat <<'?EOF'?\s*)?[\"']?([a-z]+)[(:!]")
+
+
+def main_commits(data):
+    """Typen der Commits aus den Bash-Aufrufen der Hauptsitzungen, je tool_use-Id einmal."""
+    types, seen = [], set()
+    for s in data:
+        with open(s["main_path"], encoding="utf-8", errors="replace") as fh:
+            for ln in fh:
+                try:
+                    o = json.loads(ln)
+                except ValueError:
+                    continue
+                c = (o.get("message") or {}).get("content") if isinstance(o, dict) else None
+                for b in c if isinstance(c, list) else []:
+                    if not (isinstance(b, dict) and b.get("type") == "tool_use" and b.get("name") == "Bash"):
+                        continue
+                    if b.get("id") in seen:
+                        continue
+                    seen.add(b.get("id"))
+                    m = COMMIT_RE.search((b.get("input") or {}).get("command") or "")
+                    if m:
+                        types.append(m.group(1))
+    return types
+
+
+def fix_quote_any(data, rows):
+    """(Quote, Grund): Minuten-Quote der Agents, sonst Quote aus Hauptsitzungs-Commits (fix gegen alle anderen)."""
+    q = fix_quote(rows)
+    if q is not None:
+        return q, ""
+    types = main_commits(data)
+    fixes = types.count("fix")
+    build = len(types) - fixes
+    if build:
+        return round(fixes / build, 2), ""
+    return None, "keine build-Agents und keine Bau-Commits der Hauptsitzung gefunden"
+
+
 def print_roles(data):
     rows = role_table(data)
     print(f"{'Rolle':<14} {'Agents':>6} {'Min':>8} {'out':>10}")
     for row in rows:
         print(f"{row['role']:<14} {row['agents']:>6} {row['minutes']:>8.1f} {row['out']:>10,}")
-    q = fix_quote(rows)
-    print(f"Fix-Quote {q:.2f}" if q is not None else "Fix-Quote -")
+    q, why = fix_quote_any(data, rows)
+    print(f"Fix-Quote {q:.2f}" if q is not None else f"Fix-Quote - ({why})")
 
 
 def message_text(o):
@@ -295,7 +337,7 @@ def main():
             result = {}
             if a.roles:
                 result["roles"] = role_table(data)
-                result["fix_quote"] = fix_quote(result["roles"])
+                result["fix_quote"] = fix_quote_any(data, result["roles"])[0]
             if a.gaps:
                 result["gaps"] = gap_table(data, a.gap_min)
         else:
