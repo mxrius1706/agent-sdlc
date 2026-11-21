@@ -46,6 +46,7 @@ Ask git for the repository root (`git rev-parse --show-toplevel`); it is not alw
 The run state is the file `.claude/run/<phase>.md` in the project. Look for it first.
 
 - **Found:** read it, then compare with `git worktree list` and `git branch --list '<phase-branch>-*'`. Git wins over the file where they differ; correct the file. Resume at the known point: `laufend` with a worktree and commits goes on in that worktree, `review` and `fix` go to step 5, `gemerged` is done. Start no block twice.
+- **Reports first:** the session hook lists reports in `.claude/plans/` newer than the run state (names with `bericht`, `review`, `handlauf`, `retro`, `thermo` or `config-sync`). Each one is a finished gate step. Enter it in the run state with its path and start no gate step that has a report; read the report and go on from its result.
 - **Not found:** create it in step 2.
 
 **Format:**
@@ -55,12 +56,13 @@ Phasen-Branch: <name>
 Plan: <path>
 Regelbuendel: <path>
 Paket <block>: <path>
+Gate <step>: <report path>
 
 | Block | Status | Statuscode | Fix-Runden | Worktree |
 |---|---|---|---|---|
 ```
 
-Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact. `Regelbuendel` names the hand-written fallback (step 2); write one extra header line `Paket <block>: <path>` per block pack, never a table column.
+Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A hook reads this table, so the header stays exact. `Regelbuendel` names the hand-written fallback (step 2); write one extra header line `Paket <block>: <path>` per block pack, never a table column. Write one `Gate <step>: <report path>` line per finished gate step (`review-changes`, `handlauf`, `thermo`, `retro`, `config-sync`) as soon as its report exists.
 
 **Write the run state after every transition:** dispatch, status code received, review answer, fix round, merge, block blocked.
 
