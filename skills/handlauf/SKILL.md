@@ -29,6 +29,12 @@ The reason: this pass is UX work and its entire value is being the **first** loo
 
 It reads intent, not judgement: the phase plan (goal, gate, decisions), the page's UI spec, the mockup, earlier walkthrough reports. The findings go to the user and into the phase plan; the code reviews are not their audience either, since three gates with their own heads is the point.
 
+## Size of a run
+
+- **Turn cap:** 120 turns per run as the starting value, to be calibrated in the pilot. Reaching it ends the run with a report of what was covered.
+- **Page volume:** with more surfaces than fit under the cap, split them into several runs, each with its own report.
+- **The follow-up run** (a second pass after fixes) starts in a session of its own, started by the user, never from the build session. Reason in numbers: one follow-up run of 128 turns read 16.8 million cache tokens, more than the whole build session.
+
 ## Phase 0 - understand, do not tick off
 
 1. **The surfaces** from the request, or derived from the phase plan and briefly confirmed. Then cross-check against the code: from `git diff <base>...HEAD --stat`, the pages and components the phase touched, plus the pages that use a changed component (search for its imports, following how the project routes pages). Whatever turns up and is not in scope goes to the user, who decides; this catches pages changed along the way.
