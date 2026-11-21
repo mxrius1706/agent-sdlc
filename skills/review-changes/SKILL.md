@@ -49,6 +49,8 @@ python3 -I <skill-dir>/scripts/gate-precheck.py --base <base> --head HEAD --cmd 
 
 Depth comes from **one lens per head**.
 
+**The security lens runs** when the plan carries the depth flag `security` (set in `planning` via `plan-check.py`), at stage L, or when the user asks. Otherwise the pre-check (`gate-precheck.py`, secrets, trailer) covers the mechanical part, and the spec and structure lenses run on. This holds for every plan; the plan's flag is the switch.
+
 **Up to about thirty files, split by concern.** Three reviewers in parallel, each seeing all files through one lens:
 
 | Lens | Question |
