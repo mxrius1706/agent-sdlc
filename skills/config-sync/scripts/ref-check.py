@@ -56,13 +56,21 @@ def check_file(path, root):
     return missing
 
 
+ORDER_WORD = re.compile(r"\b(then|followed|before|after|dann|danach|vor|gefolgt)\b|->|\u2192")
+ITEM = re.compile(r"\s*\d+[.)]\s")
+
+
 def gate_order_copies(path):
-    """Datei -> Zeilennummern, in denen `review-changes` und danach `thermo` (gleiche oder naechste Zeile) stehen."""
+    """Datei -> Zeilennummern mit einer Kopie der Gate-Reihenfolge.
+
+    Gemeldet wird nur, wenn zwischen `review-changes` und `thermo` ein Reihenfolgewort steht, oder wenn beide in
+    aufeinanderfolgenden Punkten einer nummerierten Liste stehen und ein Punkt das Wort Gate nennt.
+    Aufzaehlungen mit and/und/Komma und Tabellenzeilen untereinander melden nichts."""
     with open(path, encoding="utf-8", errors="replace") as fh:
         lines = fh.read().splitlines()
     hits = []
     fence = False
-    prev = None
+    prev = None  # (Zeile, Text) des vorigen Listenpunkts mit review-changes
     for no, line in enumerate(lines, 1):
         if line.lstrip().startswith(("```", "~~~")):
             fence = not fence
@@ -70,15 +78,13 @@ def gate_order_copies(path):
         if fence:
             continue
         low = line.lower()
-        if prev is not None and "thermo" in low:
-            hits.append(prev)
-            prev = None
         first = low.find("review-changes")
-        if first >= 0 and "thermo" in low[first:]:
+        if first >= 0 and ORDER_WORD.search(low[first:low.find("thermo", first)] if "thermo" in low[first:] else ""):
             hits.append(no)
-            prev = None
-        elif first >= 0:
-            prev = no
+        if ITEM.match(line):
+            if prev is not None and "thermo" in low and "gate" in (prev[1] + low):
+                hits.append(prev[0])
+            prev = (no, low) if first >= 0 else None
         elif line.strip():
             prev = None
     return hits

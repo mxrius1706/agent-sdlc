@@ -153,3 +153,61 @@ class GateOrderCopyTest(unittest.TestCase):
             "Ein Review mit `review-changes` laeuft nach Bedarf.\n")
         self.assertEqual(r.stdout, "")
         self.assertEqual(r.returncode, 0)
+
+
+class GateOrderMentionTest(unittest.TestCase):
+    """g1-G1: blosse Erwaehnungen beider Gates sind keine Kopie der Reihenfolge."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = self._tmp.name
+
+    def run_cli(self, text):
+        path = os.path.join(self.root, "doc.md")
+        write(path, text)
+        return subprocess.run([sys.executable, "-I", SCRIPT, path, "--root", self.root],
+                              capture_output=True, text=True)
+
+    def assertNoReport(self, text):
+        r = self.run_cli(text)
+        self.assertEqual(r.stdout, "")
+        self.assertEqual(r.returncode, 0)
+
+    def test_enumeration_with_or_is_no_report(self):
+        self.assertNoReport(
+            "**It takes no input from `review-changes`, `thermo-nuclear-code-quality-review` or the per-block reviews**: no findings list.\n")
+
+    def test_questions_per_skill_is_no_report(self):
+        self.assertNoReport(
+            "`execute-plan` builds the phase; this runs after it and before the phase gate, or again after a round of fixes. "
+            "It answers whether the thing works; `review-changes` whether the code is sound; "
+            "`thermo-nuclear-code-quality-review` whether it stays maintainable.\n")
+
+    def test_enumeration_with_and_is_no_report(self):
+        self.assertNoReport(
+            "**The phase gate has no exception:** the reviewers of `review-changes` and `thermo-nuclear-code-quality-review` also run on `sonnet`.\n")
+
+    def test_comma_list_is_no_report(self):
+        self.assertNoReport(
+            "Write one `Gate <step>: <report path>` line per finished gate step (`review-changes`, `handlauf`, `thermo`, `retro`).\n")
+
+    def test_table_rows_one_below_the_other_are_no_report(self):
+        self.assertNoReport(
+            "| `review-changes` | Erstes Code-Gate am Phasenende. Drei Linsen parallel, Gate-Abgleich |\n"
+            "| `thermo-nuclear-code-quality-review` | Zweites Gate. Fragt nach Wartbarkeit |\n")
+
+    def test_skill_list_is_no_report(self):
+        self.assertNoReport("**Skills:** `handlauf`, `review-changes`, `thermo-nuclear-code-quality-review`\n")
+
+    def test_plain_list_without_gate_word_is_no_report(self):
+        self.assertNoReport("1. review-changes ansehen\n2. thermo ansehen\n")
+
+    def test_order_words_still_report(self):
+        for text in ("`review-changes` then `thermo-nuclear-code-quality-review`.\n",
+                     "`review-changes`, followed by `thermo`.\n",
+                     "`review-changes` -> `thermo`.\n",
+                     "`review-changes` \u2192 `thermo`.\n",
+                     "`review-changes` vor `thermo`.\n"):
+            r = self.run_cli(text)
+            self.assertEqual(r.returncode, 1, text + r.stdout)
