@@ -66,6 +66,18 @@ Status values: `offen`, `laufend`, `review`, `fix`, `gemerged`, `blockiert`. A h
 
 **Write the run state after every transition:** dispatch, status code received, review answer, fix round, merge, block blocked.
 
+## Run lock
+
+One run at a time per phase. Before every start of a run (a `go`, the follow-up run after a hand run), from the repository root:
+
+```
+python3 -I <skill-dir>/scripts/run-lock.py acquire .claude/run/<phase>.lock
+```
+
+Exit 0 starts the run. Exit 1 means a live run holds the lock: start nothing, tell the user. At the end of the run, and when the session stops, run `release` on the same file. A lock of a dead process is reported as stale and taken over.
+
+A wake-up call (scheduled resume) is cancelled as soon as the user starts the run by hand; the lock keeps a wake-up that fires anyway from starting a second run.
+
 ## Step 1: Read the plan, extract blocks and waves
 
 Once, completely: context, goal, decisions, critical files, blocks, waves, tests, verification, out of scope. The blocks and tasks tables carry blocks, task ids, files, waves and test targets.
