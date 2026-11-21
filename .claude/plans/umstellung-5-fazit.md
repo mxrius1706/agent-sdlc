@@ -58,6 +58,9 @@ Jeder Merkpunkt ist erledigt, bewusst verworfen oder als Versuch für Pilot 2 ei
 | t13 | b4 | `block-fixer`-Auflage, README-Pfad, Cluster-Regel, thermo-Auslöser nur nach Regel | `n/a: text` | Textpunkte |
 | t14 | b4 | Schalter für Kürzungen 1 bis 3 mit Messvorschrift und Rückfallregel | `n/a: text` | Review-Volumen |
 | t15 | b4 | Sicherheitslinse nur bei Risiko-Etikett; Cloudflare-Klassen als Prompt-Inhalt | `n/a: text` | Sicherheit |
+| t18 | b6 | `context-pack.py`: Anforderungen mit Spec-Name (`<spec> REQ-014`, `<spec>:REQ-014`) wählen nur Abschnitte dieser Spec; eine Kennung ohne Spec-Namen, die in mehr als einer Spec vorkommt, ist mehrdeutig: nichts wird gewählt, das Manifest nennt sie in `notes` | `context-pack.py` mit zwei Specs, die beide `REQ-001` tragen: qualifiziert wählt genau eine, unqualifiziert keine plus Note | Dry-run am Videoprojekt |
+| t19 | b6 | `context-pack.py`: `GLOSSARY.md` im Elternordner eines `--specs`-Ordners wird gefunden | `context-pack.py` mit `<kb>/GLOSSARY.md` und `<kb>/specs/`: Begriff erscheint im Paket | Dry-run am Videoprojekt |
+| t20 | b6 | `planning`: Spalte Requirements nennt die Spec mit, wenn Kennungen nur je Spec eindeutig sind (`<spec> REQ-014`) | `n/a: text` | Dry-run am Videoprojekt |
 | t16 | b5 | Pilot 2: echte Bauphase mit den Schaltern; Zahlen neben die Basiswerte; Ablation eines großen Kontext-Kandidaten | Messung mit `session-cost.py --roles` | Gate 5 |
 | t17 | b5 | Bericht ohne Projektnamen, Hebel behalten/ändern/zurück, `retro`, `config-sync`, Memory-Datei löschen | `n/a: text` | Gate 5 |
 
@@ -73,6 +76,7 @@ t1 bis t6 zuerst (kritisch, deterministisch). Dann t7 bis t12 (unabhängig, ohne
 | b2 | t7, t8, t9 | `skills/config-sync/scripts/`, `skills/review-changes/scripts/`, `skills/plan-build/SKILL.md` | 1 | no |
 | b3 | t10, t11, t12 | `skills/retro/`, `skills/handlauf/SKILL.md` | 1 | no |
 | b4 | t13, t14, t15 | `agents/block-fixer.md`, `README.md`, `skills/review-changes/SKILL.md`, `skills/thermo-nuclear-code-quality-review/SKILL.md`, `skills/execute-plan/SKILL.md`, `skills/plan-build/SKILL.md` | 2 | no |
+| b6 | t18, t19, t20 | `skills/execute-plan/scripts/context-pack.py` mit Tests, `skills/planning/SKILL.md` | 2 | no |
 | b5 | t16, t17 | Pilotprojekt, `.claude/plans/` | 3 | yes |
 
 ## Waves
@@ -116,6 +120,7 @@ t1 bis t6 zuerst (kritisch, deterministisch). Dann t7 bis t12 (unabhängig, ohne
 | Sicherheitslinse, Cloudflare-Klassen | t15 setzt nur die Regel "Linse bei Depth-Flag `security` oder Stufe L". Die Klassendateien als Prompt-Inhalt folgen als eigener Schritt, nachdem die Quelle ganz gelesen ist (Quelle bisher nur als README gelesen) | Plan verlangt: erst SKILL.md und Validatoren lesen |
 | ref-check auf dem Baukasten | Die Prüfung "ref-check meldet nur echte Treffer" gilt in Pilot 2 am Projekt, nicht am Baukasten: seine Texte nennen Pfade des Zielprojekts (`.claude/state.md` u. a.). Auf dem Baukasten bleibt als echter Treffer nur `plan-build` (das Ritual selbst) | Gate b4 |
 | Modell-Gate der Phase | Entfallen: jeder Block hatte Block-Review (b1 und b4 mit Fix-Runde), das Gate lief mechanisch (Tests je Ordner, ref-check, Namensprüfung) | Nutzerwunsch: keine zusätzlichen Reviews bei Baukasten-Arbeit |
+| Pilot-Vorbedingung (Trockenlauf 21.11.) | Block b6 vor dem Pilot: Kennungen sind je Spec nummeriert (`REQ-001` in 26 Specs des Zielprojekts), die Auswahl nach nacktem Kennzeichen zog 89.070 Zeichen für eine Aufgabe. Qualifizierte Kennung, mehrdeutige ohne Treffer mit Hinweis | Kein stilles Raten |
 | Abnahmetests b4 | Entfallen, alle Aufgaben sind Text (`n/a: text`) | Nichts Ausführbares zum Testen |
 
 ## Block-Befunde
