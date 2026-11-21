@@ -28,6 +28,7 @@ DEFAULT_MAX = 60000
 SUB_TITLES = ("für subagenten", "fuer subagenten")
 
 REQ_ID = re.compile(r"\b[A-Z]{2,6}-\d+[a-z]?\b")
+SPEC_QUAL = re.compile(r"([A-Za-z0-9_.\-]+)(?:\s*:\s*|\s+)$")
 
 
 def split_raw(text):
@@ -143,10 +144,53 @@ def block_scope(plan_path, block_id):
     rows = [t for t in tasks if column(t, "block") == block_id]
     reqs = []
     for t in rows:
-        for rid in REQ_ID.findall(column(t, "requirements")):
-            if rid not in reqs:
-                reqs.append(rid)
+        cell = column(t, "requirements")
+        for m in REQ_ID.finditer(cell):
+            q = SPEC_QUAL.search(cell[:m.start()])
+            qual = q.group(1) if q and not REQ_ID.fullmatch(q.group(1)) else None
+            item = f"{qual} {m.group(0)}" if qual else m.group(0)
+            if item not in reqs:
+                reqs.append(item)
     return files, reqs, rows
+
+
+def spec_name(path):
+    """Spec-Datei -> Name: Dateiname ohne .md, kleingeschrieben."""
+    base = os.path.basename(path)
+    return (base[:-3] if base.lower().endswith(".md") else base).lower()
+
+
+def req_pattern(rid):
+    return r"(?<![\w-])" + re.escape(rid) + r"(?![\w-])"
+
+
+def split_reqs(reqs, names):
+    """Kennungen des Blocks -> (nackte Kennungen, {Kennung: Spec-Namen}). Ein Name, der keine Spec ist, zaehlt nicht."""
+    bare, qual = [], {}
+    for item in reqs:
+        head, _, rid = item.rpartition(" ")
+        if head and head.lower() in names:
+            qual.setdefault(rid, set()).add(head.lower())
+        elif rid not in bare:
+            bare.append(rid)
+    return bare, qual
+
+
+def spec_list_of(specs):
+    return [p for p in spec_files(specs) if os.path.basename(p) != "GLOSSARY.md"]
+
+
+def ambiguous_reqs(scope, specs):
+    """Nackte Kennungen, die in mehr als einer Spec-Datei vorkommen -> Liste (Kennung, Anzahl)."""
+    paths = spec_list_of(specs)
+    bare, _ = split_reqs(scope[1], {spec_name(p) for p in paths})
+    texts = [read_text(p) or "" for p in paths]
+    out = []
+    for rid in bare:
+        n = sum(1 for t in texts if re.search(req_pattern(rid), t))
+        if n > 1:
+            out.append((rid, n))
+    return out
 
 
 # ---- Abschnitte sammeln ----
@@ -344,10 +388,14 @@ def collect(scope, root, specs, global_claude):
             chunks = [{"id": rel + "#", "text": rest}]
         take(chunks, "regel", hit)
     # 4. Spec-Abschnitte nach Anforderungskennung
-    spec_list = [p for p in spec_files(specs) if os.path.basename(p) != "GLOSSARY.md"]
+    spec_list = spec_list_of(specs)
+    bare, qual = split_reqs(reqs, {spec_name(p) for p in spec_list})
+    ambiguous = {rid for rid, _ in ambiguous_reqs(scope, specs)}
+    bare = [r for r in bare if r not in ambiguous]
     for path in spec_list:
+        mine = bare + [r for r, ns in qual.items() if spec_name(path) in ns]
         for c in chunk_markdown(rel_id_path(path, root), read_text(path) or ""):
-            hit = any(re.search(r"(?<![\w-])" + re.escape(r) + r"(?![\w-])", c["text"]) for r in reqs)
+            hit = any(re.search(req_pattern(r), c["text"]) for r in mine)
             take([c], "spec", hit)
     # 5. Glossarbegriffe per Textvergleich
     haystack = "\n".join([column(r, "task") for r in rows] + list(files))
@@ -447,6 +495,8 @@ def main(argv):
         return 2
     included, excluded = collect(scope, a.root, a.specs, a.global_claude)
     notes = []
+    for rid, n in ambiguous_reqs(scope, a.specs):
+        notes.append(f'{rid} ist ambiguous (in {n} Specs): Spec nennen, etwa "<spec> {rid}"')
     has_glossary = any(i["kind"] == "glossar" for i in included + excluded)
     if not has_glossary:
         notes.append("no glossary found")
