@@ -92,7 +92,7 @@ t1 bis t6 zuerst (kritisch, deterministisch). Dann t7 bis t12 (unabhängig, ohne
 
 ## Verification
 
-- `python3 -I -m unittest discover -s skills -p 'test_*.py'` komplett grün.
+- Jeder Testordner einzeln grün: `for d in skills/*/scripts skills/*/hooks; do python3 -I -m unittest discover -s $d -p "test_*.py"; done` (ein Sammellauf über `skills` findet nichts).
 - `python3 -I skills/config-sync/scripts/ref-check.py` auf dem Repo: nur echte Treffer.
 - Probelauf Wiederaufnahme: Plan mit Bericht neuer als Laufzustand, `session-state.py` meldet ihn; Probelauf Doppelstart: zweiter Start verweigert.
 - `grep` gegen die Liste der Projektnamen: keine Treffer im Repo.
