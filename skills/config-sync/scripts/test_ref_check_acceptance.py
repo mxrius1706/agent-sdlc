@@ -65,10 +65,11 @@ class RefCheckTest(unittest.TestCase):
                      "`docs/{a,b}.md` `x|y/z.md` `f(x)/g.md` `kein-pfad` `wort`\n")
         self.assertEqual(mod.check_file(p, self.root), [])
 
-    def test_extension_without_slash_is_checked(self):
+    def test_extension_without_slash_is_skipped(self):
+        # t8: ein Dateiname ohne Ordner ist kein Pfad, den die Datei selbst aufloesen muss
         mod = load()
         p = self.doc("`fehlt.json` und `vorhanden.md`\n")
-        self.assertEqual(mod.check_file(p, self.root), [(1, "fehlt.json"), (1, "vorhanden.md")])
+        self.assertEqual(mod.check_file(p, self.root), [])
 
     def test_resolves_against_file_directory_too(self):
         mod = load()
