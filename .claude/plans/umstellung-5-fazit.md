@@ -1,6 +1,6 @@
 # Plan: Phase 5 Fazit, die Merkpunkte abarbeiten
 
-Rahmenplan: `.claude/plans/umstellung-kosten.md` (Phase 5). Branch `umstellung/5-fazit`. Planungstiefe **voll** (`plan-check.py depth`: 6 Bereiche). Stufe L.
+Rahmenplan: `.claude/plans/umstellung-kosten.md` (Phase 5). Branch `umstellung/5-fazit`, Status 🔍 (Blöcke b1 bis b4 gemergt und grün, Pilot b5 wartet auf Freigabe). Planungstiefe **voll** (`plan-check.py depth`: 6 Bereiche). Stufe L.
 Ablage bei Freigabe: `.claude/plans/umstellung-5-fazit.md` (ohne Projektnamen, öffentliches Repo).
 
 ## Context
@@ -114,6 +114,8 @@ t1 bis t6 zuerst (kritisch, deterministisch). Dann t7 bis t12 (unabhängig, ohne
 |---|---|---|
 | Schalter der Kürzungen | Zeile `kuerzungen` in den Decisions eines Plans: Liste aus `1`, `2`, `3` oder `keine`. Fehlt die Zeile, gilt der alte Ablauf | Je Plan abschaltbar, Pilot 2 setzt `1,2,3` |
 | Sicherheitslinse, Cloudflare-Klassen | t15 setzt nur die Regel "Linse bei Depth-Flag `security` oder Stufe L". Die Klassendateien als Prompt-Inhalt folgen als eigener Schritt, nachdem die Quelle ganz gelesen ist (Quelle bisher nur als README gelesen) | Plan verlangt: erst SKILL.md und Validatoren lesen |
+| ref-check auf dem Baukasten | Die Prüfung "ref-check meldet nur echte Treffer" gilt in Pilot 2 am Projekt, nicht am Baukasten: seine Texte nennen Pfade des Zielprojekts (`.claude/state.md` u. a.). Auf dem Baukasten bleibt als echter Treffer nur `plan-build` (das Ritual selbst) | Gate b4 |
+| Modell-Gate der Phase | Entfallen: jeder Block hatte Block-Review (b1 und b4 mit Fix-Runde), das Gate lief mechanisch (Tests je Ordner, ref-check, Namensprüfung) | Nutzerwunsch: keine zusätzlichen Reviews bei Baukasten-Arbeit |
 | Abnahmetests b4 | Entfallen, alle Aufgaben sind Text (`n/a: text`) | Nichts Ausführbares zum Testen |
 
 ## Block-Befunde
