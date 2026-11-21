@@ -400,8 +400,11 @@ def collect(scope, root, specs, global_claude):
     # 5. Glossarbegriffe per Textvergleich
     haystack = "\n".join([column(r, "task") for r in rows] + list(files))
     seen = set()
+    parents = [os.path.join(os.path.dirname(os.path.abspath(s)), "GLOSSARY.md")
+               for s in specs if os.path.isdir(s)]
+    parents = [p for p in parents if os.path.isfile(p)]
     for path in walk_files(root, name="GLOSSARY.md") + [p for p in spec_files(specs)
-                                                       if os.path.basename(p) == "GLOSSARY.md"]:
+                                                       if os.path.basename(p) == "GLOSSARY.md"] + parents:
         if os.path.abspath(path) in seen:
             continue
         seen.add(os.path.abspath(path))
