@@ -8,7 +8,7 @@ disable-model-invocation: false
 
 Use this skill for an unusually strict review focused on implementation quality, maintainability, abstraction quality, and codebase health.
 
-Under stage S and M of a plan it runs only on the trigger `thermo: yes` from `gate-precheck.py` or on request; stage L always runs it.
+It runs on `thermo: yes` from `gate-precheck.py`, at stage L, or when the user asks. Any other trigger (for example "many lines since the last run") counts only when the session names it to the user in one sentence and the user agrees; an entry in a project roadmap is no trigger.
 
 Above all, this skill should push the reviewer to be **ambitious** about code structure. Do not merely identify local cleanup opportunities. Actively search for "code judo" moves: restructurings that preserve behavior while making the implementation dramatically simpler, smaller, more direct, and more elegant.
 

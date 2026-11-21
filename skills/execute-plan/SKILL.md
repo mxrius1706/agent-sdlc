@@ -213,9 +213,9 @@ All waves merged and green: hand over to the phase gate. The stage in the plan d
 
 **Stages S and M:**
 
-1. `review-changes` runs here while the user runs `handlauf` in a session of their own at the same time.
+1. `review-changes` runs here while the user runs `handlauf` in a session of their own at the same time. Its phase reviewers are cut as `review-changes` says (clusters from about thirty files, one rule, owned there); one review per cluster otherwise only with one sentence of reason in the run state.
 2. One shared fix round takes both finding lists, bundled by pattern as in "Bundled findings". Then exactly one follow-up run.
-3. `thermo-nuclear-code-quality-review` runs when the precheck's last line says `thermo: yes` or the user asks.
+3. `thermo-nuclear-code-quality-review` runs when the precheck's last line says `thermo: yes`, at stage L, or when the user asks. Any other trigger (for example "many lines since the last run") counts only when the session names it to the user in one sentence and the user agrees; an entry in a project roadmap is no trigger.
 4. `retro` runs when the fix quote is above 0.3, a finding of the top two severity bands appeared, or the user asks. `config-sync` runs when `ref-check.py` (in `config-sync`'s `scripts/`) reports a missing path or a decision changed.
 
 **Stage L:** after the precheck the order of `plan-build` stands (gate checklist, full suite, `handlauf` where there is an interface, `review-changes`, `thermo-nuclear-code-quality-review`, report), and `thermo-nuclear-code-quality-review` always runs.
