@@ -72,7 +72,7 @@ t1 bis t6 zuerst (kritisch, deterministisch). Dann t7 bis t12 (unabhängig, ohne
 | b1 | t1, t2, t3, t4, t5, t6 | `skills/project-init/hooks/session-state.py`, `skills/project-init/hooks/auslauf.py`, `skills/execute-plan/` | 1 | no |
 | b2 | t7, t8, t9 | `skills/config-sync/scripts/`, `skills/review-changes/scripts/`, `skills/plan-build/SKILL.md` | 1 | no |
 | b3 | t10, t11, t12 | `skills/retro/`, `skills/handlauf/SKILL.md` | 1 | no |
-| b4 | t13, t14, t15 | `agents/block-fixer.md`, `README.md`, `skills/review-changes/SKILL.md`, `skills/thermo-nuclear-code-quality-review/SKILL.md` | 2 | no |
+| b4 | t13, t14, t15 | `agents/block-fixer.md`, `README.md`, `skills/review-changes/SKILL.md`, `skills/thermo-nuclear-code-quality-review/SKILL.md`, `skills/execute-plan/SKILL.md`, `skills/plan-build/SKILL.md` | 2 | no |
 | b5 | t16, t17 | Pilotprojekt, `.claude/plans/` | 3 | yes |
 
 ## Waves
@@ -108,6 +108,14 @@ t1 bis t6 zuerst (kritisch, deterministisch). Dann t7 bis t12 (unabhängig, ohne
 1. Pilot 2 mit den Kürzungsschaltern 1 bis 3 gleichzeitig oder nacheinander? (Empfehlung: gleichzeitig, weil ein Pilot teuer ist, mit je Schalter einzeln auswertbarer Messung.)
 2. Welches Projekt für Pilot 2 und wann (Kontingent)?
 
+## Decisions, nachgetragen beim Bau
+
+| Frage | Antwort | Grund |
+|---|---|---|
+| Schalter der Kürzungen | Zeile `kuerzungen` in den Decisions eines Plans: Liste aus `1`, `2`, `3` oder `keine`. Fehlt die Zeile, gilt der alte Ablauf | Je Plan abschaltbar, Pilot 2 setzt `1,2,3` |
+| Sicherheitslinse, Cloudflare-Klassen | t15 setzt nur die Regel "Linse bei Depth-Flag `security` oder Stufe L". Die Klassendateien als Prompt-Inhalt folgen als eigener Schritt, nachdem die Quelle ganz gelesen ist (Quelle bisher nur als README gelesen) | Plan verlangt: erst SKILL.md und Validatoren lesen |
+| Abnahmetests b4 | Entfallen, alle Aufgaben sind Text (`n/a: text`) | Nichts Ausführbares zum Testen |
+
 ## Block-Befunde
 
 | Block | Stufe | Befund |
@@ -120,3 +128,4 @@ t1 bis t6 zuerst (kritisch, deterministisch). Dann t7 bis t12 (unabhängig, ohne
 | b2 | 4 | Tests fehlen für GATE-ORDER auf zwei Zeilen und in Codeblöcken |
 | b1 | 3 | `run-lock.py` Rennen: leere Datei nach `O_EXCL` gilt als veraltet, zwei Übernehmer eines toten Locks; Test für leere/kaputte Lockdatei fehlt |
 | b1 | 3 | `session-state.py` Namensteile als Teilstring: `phase-3-code-review-tool.md` wird als Bericht gemeldet, wenn neuer als der Laufzustand |
+| b1 | 4 | `run-lock.py` `session_pid()`: fehlt `ps`, fällt es still auf `os.getppid()` zurück (alter Fehler ohne Hinweis); Wrapper wie `env`/`timeout` zählen als Halter |
