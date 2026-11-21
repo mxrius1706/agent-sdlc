@@ -136,3 +136,6 @@ t1 bis t6 zuerst (kritisch, deterministisch). Dann t7 bis t12 (unabhängig, ohne
 | b1 | 3 | `run-lock.py` Rennen: leere Datei nach `O_EXCL` gilt als veraltet, zwei Übernehmer eines toten Locks; Test für leere/kaputte Lockdatei fehlt |
 | b1 | 3 | `session-state.py` Namensteile als Teilstring: `phase-3-code-review-tool.md` wird als Bericht gemeldet, wenn neuer als der Laufzustand |
 | b1 | 4 | `run-lock.py` `session_pid()`: fehlt `ps`, fällt es still auf `os.getppid()` zurück (alter Fehler ohne Hinweis); Wrapper wie `env`/`timeout` zählen als Halter |
+| b6 | 3 | `spec_name`: zwei `README.md` in verschiedenen Ordnern tragen denselben Namen, `readme REQ-001` wählt beide (Test fehlt) |
+| b6 | 3 | Qualifizierer ohne passende Spec (Tippfehler) gilt still als nackt; bei eindeutiger Kennung ohne Hinweis |
+| b6 | 4 | Spec in Backticks vor der Kennung wird nicht als Qualifizierung erkannt; `ambiguous_reqs` liest die Specs zweimal |
