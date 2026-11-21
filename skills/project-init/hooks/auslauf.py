@@ -67,12 +67,14 @@ INSTRUCTION = (
     "Starte keine neuen Bloecke und keine neue Welle. Bringe, was laeuft, "
     "bis zu seinem Endschritt. Aktualisiere dann den Laufzustand, fuehre "
     "session-recap aus und sage dem Nutzer, dass er eine neue Sitzung "
-    "starten soll."
+    "starten soll. Ist ein /goal gesetzt, beende ihn mit /goal clear, "
+    "damit keine Leerturns folgen."
 )
 EMERGENCY = (
     "NOTBREMSE: Der Kontext ist fast voll. Hoere jetzt auf. Schreibe sofort "
     "den Laufzustand und die Uebergabe (session-recap), starte nichts und "
-    "sage dem Nutzer, dass er eine neue Sitzung starten soll."
+    "sage dem Nutzer, dass er eine neue Sitzung starten soll. Ist ein "
+    "/goal gesetzt, beende ihn mit /goal clear."
 )
 
 
