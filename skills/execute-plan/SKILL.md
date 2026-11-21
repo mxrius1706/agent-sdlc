@@ -107,6 +107,7 @@ python3 -I <skill-dir>/scripts/context-pack.py <plan> --block <id> --root <proje
 
 The manifest lands beside it as `.claude/run/pack-<block>.md.manifest.json`. The pack holds what the block's files and requirement ids touch: the `## Für Subagenten` sections, area rules, matching path rules, spec sections, glossary terms, the plan's decisions, the verification commands, the commit trailer and the worktree contract. Pass `--trailer` when the root instructions name one.
 
+- **Inputs come from the project:** `--specs` and `--global-claude` from the row `execute-plan` / `specs` of the root CLAUDE.md section `Project references` (spec folder, and the user's global instructions file if the row names it). No row: ask the user once and recommend the row; a pack without specs is a pack that misses them. A `<spec> REQ-n` in the plan's Requirements column selects that spec only; a bare id found in several specs selects nothing and shows in `notes`.
 - **Read the manifest** once: the `excluded` list shows what exists in the sources and did not match, `notes` names what is absent (no glossary, no trailer). Close a gap with a corrected input and a new run, or with a line in the brief.
 - **Pass only the pack path** to every subagent of the block. Record it in the run state header as `Paket <block>: <path>`.
 - **Exit 3** means the pack exceeds `--max-chars`. The script never cuts; split the block (the user agrees to the new cut), then build the packs again.
