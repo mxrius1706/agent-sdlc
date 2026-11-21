@@ -27,10 +27,10 @@ Jeder Merkpunkt ist erledigt, bewusst verworfen oder als Versuch für Pilot 2 ei
 
 | Datei | Änderung |
 |---|---|
-| `hooks/session-state.py` (und Test) | listet Berichte in `.claude/plans/`, die neuer sind als der Laufzustand; Lock-Hinweis |
+| `skills/project-init/hooks/session-state.py` (und Test) | listet Berichte in `.claude/plans/`, die neuer sind als der Laufzustand; Lock-Hinweis |
 | `skills/execute-plan/SKILL.md` | Schritt 0 prüft Berichte, Laufzustand führt fertige Gate-Schritte mit Berichtspfad; keine Wakeup-Doppelstarts; Cluster-Zerlegung nur mit Begründung; Kontoprüfung vor langen Läufen |
 | `skills/execute-plan/scripts/` (neu: `run-lock.py` oder in `auslauf.py`) | Lock je Lauf, Start verweigert bei laufendem Lauf |
-| `hooks/auslauf.py` | `/goal`-Schleife und Konto-Limit: Marke beendet Leerturns, Text für "bis Limit, nicht darüber" |
+| `skills/project-init/hooks/auslauf.py` | `/goal`-Schleife und Konto-Limit: Marke beendet Leerturns, Text für "bis Limit, nicht darüber" |
 | `skills/plan-build/SKILL.md` | Fahrplan verweist auf das Ritual statt es zu kopieren; thermo-Auslöser nur nach Regel (kein freier Auslöser) |
 | `skills/review-changes/scripts/gate-precheck.py` | Exit-Code von `plugin validate` erhalten; `--exclude` nur falls der Release-Commit es braucht |
 | `skills/config-sync/scripts/ref-check.py` | Filter gegen Falschmeldungen (30 von 30 falsch), Test mit den realen Fällen |
@@ -69,7 +69,7 @@ t1 bis t6 zuerst (kritisch, deterministisch). Dann t7 bis t12 (unabhängig, ohne
 
 | Block | Tasks | Files | Wave | Exclusive |
 |---|---|---|---|---|
-| b1 | t1, t2, t3, t4, t5, t6 | `hooks/session-state.py`, `hooks/auslauf.py`, `skills/execute-plan/` | 1 | no |
+| b1 | t1, t2, t3, t4, t5, t6 | `skills/project-init/hooks/session-state.py`, `skills/project-init/hooks/auslauf.py`, `skills/execute-plan/` | 1 | no |
 | b2 | t7, t8, t9 | `skills/config-sync/scripts/`, `skills/review-changes/scripts/`, `skills/plan-build/SKILL.md` | 1 | no |
 | b3 | t10, t11, t12 | `skills/retro/`, `skills/handlauf/SKILL.md` | 1 | no |
 | b4 | t13, t14, t15 | `agents/block-fixer.md`, `README.md`, `skills/review-changes/SKILL.md`, `skills/thermo-nuclear-code-quality-review/SKILL.md` | 2 | no |
