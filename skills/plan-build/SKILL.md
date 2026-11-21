@@ -124,6 +124,7 @@ Write the section per the template below, then three more things:
 - **Set `Jetzt` and `Als Nächstes`** to the first phase and its first action.
 - **Set `Aktuelle Bauphase`** to text that appears in that phase's heading. The SessionStart hook injects only the roadmap head and that one section; set it wrong and the next session works from the wrong phase without anything failing.
 - **Mark step 11 in the setup table** as done.
+- **Point the roadmap at the ritual, do not copy the gate order into it.** A phase line says "gates per the ritual in `plan-build`"; a copied order drifts from the ritual and the two then contradict each other.
 
 ## Re-running
 
