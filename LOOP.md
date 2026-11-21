@@ -311,7 +311,7 @@ Der **`handlauf`** ist ein eigenes Gate, weil er eine Frage beantwortet, die kei
 
 **Er läuft in einer eigenen, frischen Sitzung und bekommt bewusst keinen Review-Input.** Keine Findings-Liste, kein Review-Bericht, kein Hinweis aus den Block-Reviews. Das sieht nach Verschwendung aus und ist das Gegenteil: Sein ganzer Wert liegt darin, der **erste** Blick zu sein. Wer gelesen hat, dass die Rechteprüfung im Handler in Ordnung ist, sucht die Rechteprüfung statt die Seite anzusehen; wer eine Liste mit neun Befunden mitbringt, bestätigt diese neun und übersieht den zehnten — die schiefe Spalte, die niemand notiert hat. Gelesen wird deshalb nur **Absicht**: Phasen-Plan, UI-Spec, Mockup, frühere Handlauf-Berichte. Ein Review ist dagegen schon ein Urteil, und genau das färbt ab. Die Befunde gehen an den Nutzer und in den Phasen-Plan, nicht in die Code-Gates.
 
-Das Änderungsreview misst **nicht** allgemeine Code-Ästhetik, sondern: Tut der Code, was die Spec sagt, auf die Art, wie dieses Projekt es sonst tut? Es lädt gezielt die Specs der geänderten Pfade und fächert in **drei Linsen** auf, jede mit einem eigenen Kopf: Sicherheit, Spec-Treue, Struktur. Drei Denkweisen; zusammengelegt kostet es Tiefe, weiter aufgeteilt fallen Findings durch die Ritzen.
+Das Änderungsreview misst **nicht** allgemeine Code-Ästhetik, sondern: Tut der Code, was die Spec sagt, auf die Art, wie dieses Projekt es sonst tut? Es lädt gezielt die Specs der geänderten Pfade und fächert in Linsen auf, jede mit einem eigenen Kopf: Spec-Treue und Struktur immer, Sicherheit nur bei Flag `security`, Stufe L oder auf Wunsch. Bis zu drei Denkweisen; zusammengelegt kostet es Tiefe, weiter aufgeteilt fallen Findings durch die Ritzen.
 
 Die Struktur-Linse liest dabei, was das Projekt an Urteilsregeln gesammelt hat (`CODING_STANDARDS.md`), prüft Namen gegen das Glossar und hat eine feste Liste von zwölf Code-Smells nach Fowler als Heuristik dabei, jeder Fund ausdrücklich als „möglich“ markiert; dokumentierte Projektstandards haben Vorrang, und was ein Werkzeug schon prüft, wird übersprungen.
 
@@ -501,7 +501,7 @@ Ehrlich, weil ein Kreislauf mit Lücke kein Kreislauf ist.
 | `ref-check.py` | Pfade in Backticks der Anweisungsdateien auf Existenz prüfen, erster Schritt von `config-sync` | vorhanden |
 | `testing` | Testdisziplin, Verify Red, Pflichtfälle aus dem Projekt abgeleitet | vorhanden |
 | `handlauf` | Fläche im Browser durchgehen, eigene Sitzung ohne Review-Input, reiner Bericht | vorhanden |
-| `review-changes` | Code-Gate am Phasenende, drei Linsen, Gate-Abgleich, reiner Bericht | vorhanden |
+| `review-changes` | Code-Gate am Phasenende, Linsen nach Flag, Gate-Abgleich, reiner Bericht | vorhanden |
 | `thermo-nuclear-code-quality-review` | Zweites, getrenntes Gate: Wartbarkeit statt Korrektheit | vorhanden |
 | `retro` | Umgebung nach der Phase verbessern: Checks für Mechanisches, `CODING_STANDARDS.md` für Urteile | vorhanden |
 | `diagnosing-bugs` | Quereinstieg bei Fehlern: erst eine rote Rückkopplung, dann Theorien | vorhanden |

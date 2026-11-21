@@ -25,7 +25,7 @@ Der Ausgangspunkt ist eine Beobachtung. Ein Agent, der bei jeder Sitzung bei nul
 | `execute-plan` | Den freigegebenen Plan abarbeiten, Block für Block im eigenen Worktree, bis zu drei parallel. `scripts/context-pack.py` baut je Block ein Paket mit Manifest, das nie abgeschnitten wird |
 | `testing` | Testdisziplin. Zuerst der fehlschlagende Test, Verify Red ist Pflicht. Getestet wird an den Schnittstellen, die der Plan nennt |
 | `handlauf` | Drittes Gate, vor den Code-Gates. Die gebaute Fläche im Browser ansehen und durchklicken, wie ein Nutzer sie erlebt. Eigene Sitzung, kein Review-Input, reiner Bericht |
-| `review-changes` | Erstes Code-Gate am Phasenende. Drei Linsen parallel, Gate-Abgleich, reiner Bericht. `scripts/gate-precheck.py` prüft vorher mechanisch Befehle, Trailer, Dateigrößen und Verweisziele |
+| `review-changes` | Erstes Code-Gate am Phasenende. Linsen parallel (Spec-Treue und Struktur immer, Sicherheit nach Flag `security`, Stufe L oder Wunsch), Gate-Abgleich, reiner Bericht. `scripts/gate-precheck.py` prüft vorher mechanisch Befehle, Trailer, Dateigrößen und Verweisziele |
 | `thermo-nuclear-code-quality-review` | Zweites Gate. Fragt nicht ob der Code richtig ist, sondern ob er wartbar bleibt |
 | `retro` | Nach der Phase: Was hat die Arbeit schwer gemacht? Mechanisches wird ein Check, Urteilsfragen werden Regeln für die Reviewer. Ändert die Umgebung, nicht den Code |
 | `config-sync` | Die Konfiguration gegen ihre vier Autoritäten prüfen und die Drift nachziehen. `scripts/ref-check.py` prüft vorab, ob Pfade in Backticks existieren |
