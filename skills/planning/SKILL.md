@@ -41,7 +41,7 @@ Sections, all of them mandatory:
 
 **Critical files.** Which files change and how. A wrong assumption from the reading in phase 0 becomes visible here before it costs anything.
 
-**Tasks.** A table, one row per step, each small enough to be finished and checked. Each task gets a short id (`a1`, `a2`, ...) so commits and findings can name it. Columns: `Id`, `Block`, `Task`, `Test target (seam)`, `Requirements`. The test target is the public interface the task is tested at, in backticks, with the case. A task without behaviour (pure text) carries `n/a: text`. Requirements are the spec ids (`REQ-`, `SEC-`, `CON-`, `GUD-`, `PAT-`, `AC-` plus number) the task serves.
+**Tasks.** A table, one row per step, each small enough to be finished and checked. Each task gets a short id (`a1`, `a2`, ...) so commits and findings can name it. Columns: `Id`, `Block`, `Task`, `Test target (seam)`, `Requirements`. The test target is the public interface the task is tested at, in backticks, with the case. A task without behaviour (pure text) carries `n/a: text`. Requirements are the spec ids (`REQ-`, `SEC-`, `CON-`, `GUD-`, `PAT-`, `AC-` plus number) the task serves; where ids repeat across specs, name the spec (`<spec> REQ-014`).
 
 **Order.** The sequence of the tasks by id, with the reason wherever it is not obvious.
 
