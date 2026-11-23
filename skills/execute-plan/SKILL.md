@@ -226,6 +226,8 @@ Write the collected block-review findings into the plan file under `## Block-Bef
 
 Check that `.worktrees/` is empty and `git worktree list` shows only the main checkout.
 
+**Hand-over as a pull request.** When the gate is done and its report is written, offer the phase merge as a pull request instead of a local merge, if the repo has a remote and `gh auth status` is green. Push the phase branch and run `gh pr create --base <main branch> --head <phase branch>`. The body holds the plan path, the stage, the paths of the gate reports and one line per open finding; no more, and no project data if the repo is public. Pushing is the user's call: ask once, naming branch and remote, and an approval does not carry to the next phase. The coordinator never merges the pull request itself. Without a remote or `gh`, merge locally as before.
+
 ## Review cuts
 
 A trial, switched per plan by the line `kuerzungen` in the plan's Decisions: a list of `1`, `2`, `3`, or `keine`. Without the line the flow above stands unchanged.
@@ -257,7 +259,7 @@ When the mark `.claude/run/auslauf-<session_id>` exists, the context is nearly f
 - Only worktrees are edited; the main checkout stays untouched.
 - A block merges after its rebase and with no blocking finding open.
 - The next wave opens after the full suite on the phase branch is green.
-- Merges are `--no-ff`; deletions are `-d`; nothing is pushed.
+- Merges are `--no-ff`; deletions are `-d`; nothing is pushed, except the phase branch after the user's go (pull request hand-over).
 - Deviations from the plan go to the user.
 
 ## Where this fits
